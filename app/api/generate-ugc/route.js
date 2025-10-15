@@ -1,6 +1,11 @@
 import { NextResponse } from 'next/server';
 import { checkAndIncrementDailyLimit } from '../../../lib/rateLimit';
 
+// Vercel runtime hints
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+export const maxDuration = 60; // seconds
+
 export async function POST(request) {
     try {
         const { brand, category, creator, length, platform, message, image, imageType } = await request.json();
