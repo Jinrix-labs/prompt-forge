@@ -234,7 +234,7 @@ DO NOT include any text outside the JSON. DO NOT use markdown code blocks.`;
             const cleanJson = jsonMatch[0];
             console.log('Cleaned Claude JSON:', cleanJson);
             try {
-                var parsed = JSON.parse(cleanJson);
+                const claudeParsed = JSON.parse(cleanJson);
             } catch (parseError) {
                 console.error('Failed to parse cleaned Claude JSON:', cleanJson, parseError);
                 const res = NextResponse.json({ error: 'Invalid JSON from Claude' }, { status: 502 });
@@ -243,7 +243,8 @@ DO NOT include any text outside the JSON. DO NOT use markdown code blocks.`;
                 res.headers.set('X-RateLimit-Used', String(rl.used));
                 return res;
             }
-            const res = NextResponse.json({ prompts: parsed.prompts || [] });
+            const claudeParsed = JSON.parse(cleanJson);
+            const res = NextResponse.json({ prompts: claudeParsed.prompts || [] });
             res.headers.set('X-RateLimit-Limit', String(rl.limit));
             res.headers.set('X-RateLimit-Remaining', String(Math.max(0, rl.remaining)));
             res.headers.set('X-RateLimit-Used', String(rl.used));
@@ -251,13 +252,13 @@ DO NOT include any text outside the JSON. DO NOT use markdown code blocks.`;
         }
 
         // For Groq path, keep original parsing
-        let parsed;
+        let groqParsed;
         try {
-            parsed = JSON.parse(responseText);
+            groqParsed = JSON.parse(responseText);
         } catch (parseError) {
             const jsonMatch = responseText.match(/\{[\s\S]*\}$/);
             if (jsonMatch) {
-                parsed = JSON.parse(jsonMatch[0]);
+                groqParsed = JSON.parse(jsonMatch[0]);
             } else {
                 console.error('Failed to parse JSON:', responseText);
                 const res = NextResponse.json({ error: 'Invalid response format' }, { status: 502 });
@@ -268,7 +269,7 @@ DO NOT include any text outside the JSON. DO NOT use markdown code blocks.`;
             }
         }
 
-        const res = NextResponse.json({ prompts: parsed.prompts || [] });
+        const res = NextResponse.json({ prompts: groqParsed.prompts || [] });
         res.headers.set('X-RateLimit-Limit', String(rl.limit));
         res.headers.set('X-RateLimit-Remaining', String(Math.max(0, rl.remaining)));
         res.headers.set('X-RateLimit-Used', String(rl.used));
