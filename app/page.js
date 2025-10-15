@@ -113,7 +113,17 @@ export default function PromptGenerator() {
             }
 
             if (!response.ok) {
-                throw new Error('Failed to generate prompts');
+                const errorText = await response.text().catch(() => '');
+                console.error('Generate API error:', errorText || response.statusText);
+                alert((() => {
+                    try {
+                        const parsed = JSON.parse(errorText);
+                        return parsed?.error || parsed?.message || 'Failed to generate prompts';
+                    } catch (_) {
+                        return errorText || 'Failed to generate prompts';
+                    }
+                })());
+                return;
             }
 
             const data = await response.json();
