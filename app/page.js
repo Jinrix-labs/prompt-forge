@@ -28,7 +28,7 @@ export default function PromptGenerator() {
     // Load favorites from localStorage on mount
     useEffect(() => {
         try {
-            const savedFavorites = localStorage.getItem('prompt-forge-favorites');
+            const savedFavorites = localStorage.getItem('zunno-favorites');
             if (savedFavorites) {
                 setFavorites(JSON.parse(savedFavorites));
             }
@@ -40,7 +40,7 @@ export default function PromptGenerator() {
     // Save favorites to localStorage whenever favorites change
     useEffect(() => {
         try {
-            localStorage.setItem('prompt-forge-favorites', JSON.stringify(favorites));
+            localStorage.setItem('zunno-favorites', JSON.stringify(favorites));
         } catch (error) {
             console.error('Failed to save favorites:', error);
         }
@@ -226,7 +226,7 @@ export default function PromptGenerator() {
                     <div className="inline-block mb-4">
                         <div className="flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-cyan-500 via-fuchsia-500 to-yellow-500 rounded-full">
                             <Zap className="w-6 h-6 text-black" fill="black" />
-                            <h1 className="text-3xl font-black text-black tracking-tight">PROMPT FORGE</h1>
+                            <h1 className="text-3xl font-black text-black tracking-tight">ZUNNO</h1>
                         </div>
                     </div>
                     <p className="text-gray-400 text-lg">AI-Powered Prompt Generation for Creators</p>

@@ -1,4 +1,4 @@
-# Prompt Forge
+# ZUNNO
 
 AI-Powered Prompt Generation for Creators. Generate optimized prompts for AI image and video generation across multiple platforms.
 

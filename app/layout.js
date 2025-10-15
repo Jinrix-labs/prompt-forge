@@ -1,7 +1,7 @@
 import './globals.css'
 
 export const metadata = {
-    title: 'Prompt Forge - AI-Powered Prompt Generation',
+    title: 'ZUNNO - AI-Powered Prompt Generation',
     description: 'Generate optimized prompts for AI image and video generation',
 }
 
