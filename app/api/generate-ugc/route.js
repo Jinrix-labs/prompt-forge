@@ -29,7 +29,14 @@ export async function POST(request) {
             });
             content.push({
                 type: "text",
-                text: `Analyze this product image. Note the packaging design, colors, shape, size, materials, and overall aesthetic. Use these visual details in your prompts.
+                text: `Analyze this product image and note key visual details for the prompt:
+- Overall packaging design and shape
+- Primary colors and color scheme
+- Brand name/logo (if clearly visible)
+- Key visual elements that make it recognizable
+- Material/texture (glossy, matte, glass, plastic, etc.)
+
+Focus on what makes the product visually distinctive, not tiny details.
 
 Then generate 3 professional Sora 2 UGC prompts.`
             });
@@ -58,7 +65,7 @@ CRITICAL UGC REQUIREMENTS:
 4. Creator authenticity markers: "casual setting", "home environment", "genuine reaction"
 5. Camera movement: "slight shake", "zoom in", "slow pan"
 6. UGC aesthetic: "smartphone quality", "authentic", "relatable", "unpolished but professional"
-7. ${image ? 'Reference specific product details from the image (colors, packaging design, size)' : 'Describe generic product appearance'}
+7. ${image ? 'Reference key product visuals from the image (main colors, packaging style, brand name if visible). Keep it natural - example: "holding sleek white bottle with mint green accents" rather than obsessing over tiny label text.' : 'Describe generic product appearance'}
 8. Break down into timeline segments (0-3s, 3-8s, etc.)
 
 STRUCTURE FOR ${length}-SECOND VIDEO:
