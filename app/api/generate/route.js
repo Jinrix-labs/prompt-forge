@@ -77,6 +77,13 @@ Requirements:
 - Balance technical precision with creative description
 - NO generic phrases like "person" - be specific about appearance, clothing, pose
 
+CRITICAL OUTPUT RULES:
+Your response must be ONLY a single valid JSON object.
+DO NOT use markdown code blocks.
+DO NOT use backticks.
+DO NOT add any text before or after the JSON.
+Just the raw JSON starting with { and ending with }.
+
 GOOD EXAMPLE:
 "Adult woman with short purple hair sitting at futuristic ramen shop counter, neon pink and blue signs reflecting off wet surfaces, steam rising from bowl, holographic menu displays, rain visible through window, cyberpunk aesthetic, detailed anime art style, cinematic composition, vibrant colors, 8k, highly detailed"
 
@@ -207,15 +214,47 @@ DO NOT include any text outside the JSON. DO NOT use markdown code blocks.`;
             return res;
         }
 
-        // Clean up the response text
-        responseText = responseText.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
+        // Clean up and aggressively extract the JSON object for Claude
+        if (useClaude) {
+            responseText = responseText
+                .replace(/```json\s*/gi, '')
+                .replace(/```\s*/g, '')
+                .replace(/`/g, '')
+                .trim();
 
-        // Try to parse the JSON
+            const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+            if (!jsonMatch) {
+                console.error('No valid JSON found in Claude response:', responseText);
+                const res = NextResponse.json({ error: 'Invalid response format from Claude' }, { status: 502 });
+                res.headers.set('X-RateLimit-Limit', String(rl.limit));
+                res.headers.set('X-RateLimit-Remaining', String(Math.max(0, rl.remaining)));
+                res.headers.set('X-RateLimit-Used', String(rl.used));
+                return res;
+            }
+            const cleanJson = jsonMatch[0];
+            console.log('Cleaned Claude JSON:', cleanJson);
+            try {
+                var parsed = JSON.parse(cleanJson);
+            } catch (parseError) {
+                console.error('Failed to parse cleaned Claude JSON:', cleanJson, parseError);
+                const res = NextResponse.json({ error: 'Invalid JSON from Claude' }, { status: 502 });
+                res.headers.set('X-RateLimit-Limit', String(rl.limit));
+                res.headers.set('X-RateLimit-Remaining', String(Math.max(0, rl.remaining)));
+                res.headers.set('X-RateLimit-Used', String(rl.used));
+                return res;
+            }
+            const res = NextResponse.json({ prompts: parsed.prompts || [] });
+            res.headers.set('X-RateLimit-Limit', String(rl.limit));
+            res.headers.set('X-RateLimit-Remaining', String(Math.max(0, rl.remaining)));
+            res.headers.set('X-RateLimit-Used', String(rl.used));
+            return res;
+        }
+
+        // For Groq path, keep original parsing
         let parsed;
         try {
             parsed = JSON.parse(responseText);
         } catch (parseError) {
-            // Try to extract JSON from the response if it's wrapped in other text
             const jsonMatch = responseText.match(/\{[\s\S]*\}$/);
             if (jsonMatch) {
                 parsed = JSON.parse(jsonMatch[0]);
