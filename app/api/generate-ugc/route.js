@@ -1,8 +1,20 @@
 import { NextResponse } from 'next/server';
+import { checkAndIncrementDailyLimit } from '../../../lib/rateLimit';
 
 export async function POST(request) {
     try {
         const { brand, category, creator, length, platform, message, image, imageType } = await request.json();
+        // Basic per-IP rate limit for UGC prompts (e.g., 5/day)
+        const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+        const rl = checkAndIncrementDailyLimit(`ugc:${ip}`, 5);
+        if (!rl.allowed) {
+            const res = NextResponse.json({ message: 'Daily UGC limit reached for free tier.' }, { status: 429 });
+            res.headers.set('X-RateLimit-Limit', String(rl.limit));
+            res.headers.set('X-RateLimit-Remaining', String(rl.remaining));
+            res.headers.set('X-RateLimit-Used', String(rl.used));
+            return res;
+        }
+
 
         const creatorMap = {
             'female-20s': 'female creator in her 20s, energetic and relatable',
@@ -146,13 +158,18 @@ DO NOT include markdown. ONLY return valid JSON.`
         responseText = responseText.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
 
         const parsed = JSON.parse(responseText);
-        return NextResponse.json(parsed);
+        const res = NextResponse.json(parsed);
+        res.headers.set('X-RateLimit-Limit', String(rl.limit));
+        res.headers.set('X-RateLimit-Remaining', String(Math.max(0, rl.remaining)));
+        res.headers.set('X-RateLimit-Used', String(rl.used));
+        return res;
 
     } catch (error) {
         console.error('UGC API Error:', error);
-        return NextResponse.json(
+        const res = NextResponse.json(
             { error: 'Failed to generate UGC prompts', details: error.message },
             { status: 500 }
         );
+        return res;
     }
 }

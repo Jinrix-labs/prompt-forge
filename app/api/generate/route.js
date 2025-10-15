@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { checkAndIncrementDailyLimit } from '../../../lib/rateLimit';
 
 export async function POST(request) {
     try {
@@ -9,6 +10,17 @@ export async function POST(request) {
         }
 
         console.log('Request params:', { userInput, contentType, platform, creativeMode });
+
+        // Basic per-IP rate limit for regular prompts (e.g., 10/day)
+        const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+        const rl = checkAndIncrementDailyLimit(`regular:${ip}`, 10);
+        if (!rl.allowed) {
+            const res = NextResponse.json({ message: 'Daily limit reached for free tier.' }, { status: 429 });
+            res.headers.set('X-RateLimit-Limit', String(rl.limit));
+            res.headers.set('X-RateLimit-Remaining', String(rl.remaining));
+            res.headers.set('X-RateLimit-Used', String(rl.used));
+            return res;
+        }
 
         // Choose API based on creative mode
         const useClaude = !creativeMode;
@@ -147,10 +159,14 @@ DO NOT include any text outside the JSON. DO NOT use markdown code blocks.`;
                 error: errorText,
                 api: useClaude ? 'Claude' : 'Groq'
             });
-            return NextResponse.json(
+            const res = NextResponse.json(
                 { error: 'Failed to generate prompts', details: errorText, status: response.status },
                 { status: 502 }
             );
+            res.headers.set('X-RateLimit-Limit', String(rl.limit));
+            res.headers.set('X-RateLimit-Remaining', String(Math.max(0, rl.remaining)));
+            res.headers.set('X-RateLimit-Used', String(rl.used));
+            return res;
         }
 
         let data;
@@ -179,7 +195,11 @@ DO NOT include any text outside the JSON. DO NOT use markdown code blocks.`;
         }
 
         if (!responseText) {
-            return NextResponse.json({ error: 'No content received from AI' }, { status: 502 });
+            const res = NextResponse.json({ error: 'No content received from AI' }, { status: 502 });
+            res.headers.set('X-RateLimit-Limit', String(rl.limit));
+            res.headers.set('X-RateLimit-Remaining', String(Math.max(0, rl.remaining)));
+            res.headers.set('X-RateLimit-Used', String(rl.used));
+            return res;
         }
 
         // Clean up the response text
@@ -196,16 +216,26 @@ DO NOT include any text outside the JSON. DO NOT use markdown code blocks.`;
                 parsed = JSON.parse(jsonMatch[0]);
             } else {
                 console.error('Failed to parse JSON:', responseText);
-                return NextResponse.json({ error: 'Invalid response format' }, { status: 502 });
+                const res = NextResponse.json({ error: 'Invalid response format' }, { status: 502 });
+                res.headers.set('X-RateLimit-Limit', String(rl.limit));
+                res.headers.set('X-RateLimit-Remaining', String(Math.max(0, rl.remaining)));
+                res.headers.set('X-RateLimit-Used', String(rl.used));
+                return res;
             }
         }
 
-        return NextResponse.json({ prompts: parsed.prompts || [] });
+        const res = NextResponse.json({ prompts: parsed.prompts || [] });
+        res.headers.set('X-RateLimit-Limit', String(rl.limit));
+        res.headers.set('X-RateLimit-Remaining', String(Math.max(0, rl.remaining)));
+        res.headers.set('X-RateLimit-Used', String(rl.used));
+        return res;
     } catch (error) {
         console.error('Server error:', error);
-        return NextResponse.json(
+        const res = NextResponse.json(
             { error: 'Internal server error', details: error?.message },
             { status: 500 }
         );
+        // no rl context here on failure before rl init; headers omitted
+        return res;
     }
 }

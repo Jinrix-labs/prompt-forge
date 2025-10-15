@@ -24,6 +24,7 @@ export default function PromptGenerator() {
     const [ugcPrompts, setUgcPrompts] = useState([]);
     const [productImage, setProductImage] = useState(null);
     const [imagePreview, setImagePreview] = useState(null);
+    const [usageInfo, setUsageInfo] = useState({ regular: null, ugc: null });
 
     // Load favorites from localStorage on mount
     useEffect(() => {
@@ -92,6 +93,24 @@ export default function PromptGenerator() {
                 },
                 body: JSON.stringify({ userInput, contentType, platform, creativeMode })
             });
+
+            // Capture rate limit headers
+            const remaining = response.headers.get('X-RateLimit-Remaining');
+            const limit = response.headers.get('X-RateLimit-Limit');
+            const used = response.headers.get('X-RateLimit-Used');
+
+            if (remaining && limit) {
+                setUsageInfo(prev => ({
+                    ...prev,
+                    regular: { remaining: parseInt(remaining), limit: parseInt(limit), used: used ? parseInt(used) : undefined }
+                }));
+            }
+
+            if (response.status === 429) {
+                const errorData = await response.json().catch(() => ({}));
+                alert(errorData.message || "Daily limit reached. Try again tomorrow or upgrade to Pro!");
+                return;
+            }
 
             if (!response.ok) {
                 throw new Error('Failed to generate prompts');
@@ -167,6 +186,24 @@ export default function PromptGenerator() {
                     imageType: productImage?.type
                 })
             });
+
+            // Capture rate limit headers
+            const remaining = response.headers.get('X-RateLimit-Remaining');
+            const limit = response.headers.get('X-RateLimit-Limit');
+            const used = response.headers.get('X-RateLimit-Used');
+
+            if (remaining && limit) {
+                setUsageInfo(prev => ({
+                    ...prev,
+                    ugc: { remaining: parseInt(remaining), limit: parseInt(limit), used: used ? parseInt(used) : undefined }
+                }));
+            }
+
+            if (response.status === 429) {
+                const errorData = await response.json().catch(() => ({}));
+                alert(errorData.message || "Daily UGC limit reached. Upgrade to Pro for unlimited access!");
+                return;
+            }
 
             if (!response.ok) {
                 throw new Error('Failed to generate UGC prompts');
