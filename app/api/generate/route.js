@@ -220,36 +220,92 @@ DO NOT include any text outside the JSON. DO NOT use markdown code blocks.`;
 
         // Clean up and aggressively extract the JSON object for Claude
         if (useClaude) {
-            responseText = responseText
+            console.log('Raw Claude response text:', responseText);
+            
+            // Try multiple JSON extraction methods
+            let cleanJson = '';
+            
+            // Method 1: Remove markdown code blocks
+            let cleaned = responseText
                 .replace(/```json\s*/gi, '')
                 .replace(/```\s*/g, '')
                 .replace(/`/g, '')
                 .trim();
-
-            const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-            if (!jsonMatch) {
+            
+            // Method 2: Find JSON object with more flexible regex
+            const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+                cleanJson = jsonMatch[0];
+            } else {
+                // Method 3: Try to find JSON array
+                const arrayMatch = cleaned.match(/\[[\s\S]*\]/);
+                if (arrayMatch) {
+                    cleanJson = `{"prompts": ${arrayMatch[0]}}`;
+                } else {
+                    // Method 4: Look for any JSON-like structure
+                    const anyJsonMatch = cleaned.match(/\{[\s\S]*\}|\[[\s\S]*\]/);
+                    if (anyJsonMatch) {
+                        cleanJson = anyJsonMatch[0];
+                        // If it's an array, wrap it in prompts
+                        if (cleanJson.startsWith('[')) {
+                            cleanJson = `{"prompts": ${cleanJson}}`;
+                        }
+                    }
+                }
+            }
+            
+            if (!cleanJson) {
                 console.error('No valid JSON found in Claude response:', responseText);
-                const res = NextResponse.json({ error: 'Invalid response format from Claude' }, { status: 502 });
+                const res = NextResponse.json({ 
+                    error: 'Invalid response format from Claude',
+                    debug: {
+                        rawResponse: responseText.substring(0, 500) + '...',
+                        cleaned: cleaned.substring(0, 500) + '...'
+                    }
+                }, { status: 502 });
                 res.headers.set('X-RateLimit-Limit', String(rl.limit));
                 res.headers.set('X-RateLimit-Remaining', String(Math.max(0, rl.remaining)));
                 res.headers.set('X-RateLimit-Used', String(rl.used));
                 return res;
             }
-            const cleanJson = jsonMatch[0];
-            console.log('Cleaned Claude JSON:', cleanJson);
+            
+            console.log('Extracted JSON:', cleanJson);
             let claudeParsed;
             try {
                 claudeParsed = JSON.parse(cleanJson);
             } catch (parseError) {
-                console.error('Failed to parse cleaned Claude JSON:', cleanJson, parseError);
-                const res = NextResponse.json({ error: 'Invalid JSON from Claude' }, { status: 502 });
+                console.error('Failed to parse Claude JSON:', cleanJson, parseError);
+                const res = NextResponse.json({ 
+                    error: 'Invalid JSON from Claude',
+                    debug: {
+                        extractedJson: cleanJson,
+                        parseError: parseError.message
+                    }
+                }, { status: 502 });
                 res.headers.set('X-RateLimit-Limit', String(rl.limit));
                 res.headers.set('X-RateLimit-Remaining', String(Math.max(0, rl.remaining)));
                 res.headers.set('X-RateLimit-Used', String(rl.used));
                 return res;
             }
+            
             console.log('Claude parsed response:', JSON.stringify(claudeParsed, null, 2));
-            const res = NextResponse.json({ prompts: claudeParsed.prompts || [] });
+            
+            // Validate the parsed response
+            if (!claudeParsed.prompts || !Array.isArray(claudeParsed.prompts)) {
+                console.error('Invalid prompts structure from Claude:', claudeParsed);
+                const res = NextResponse.json({ 
+                    error: 'Invalid prompts structure from Claude',
+                    debug: {
+                        parsedResponse: claudeParsed
+                    }
+                }, { status: 502 });
+                res.headers.set('X-RateLimit-Limit', String(rl.limit));
+                res.headers.set('X-RateLimit-Remaining', String(Math.max(0, rl.remaining)));
+                res.headers.set('X-RateLimit-Used', String(rl.used));
+                return res;
+            }
+            
+            const res = NextResponse.json({ prompts: claudeParsed.prompts });
             res.headers.set('X-RateLimit-Limit', String(rl.limit));
             res.headers.set('X-RateLimit-Remaining', String(Math.max(0, rl.remaining)));
             res.headers.set('X-RateLimit-Used', String(rl.used));
