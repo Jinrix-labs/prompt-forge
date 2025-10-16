@@ -112,6 +112,14 @@ export default function PromptGenerator() {
                 return;
             }
 
+            if (response.status === 400) {
+                const errorData = await response.json().catch(() => ({}));
+                if (errorData.code === 'CONTENT_POLICY_VIOLATION') {
+                    alert("🚫 " + errorData.error + "\n\nTry rephrasing your prompt with more appropriate language.");
+                    return;
+                }
+            }
+
             if (!response.ok) {
                 const errorText = await response.text().catch(() => '');
                 console.error('Generate API error:', errorText || response.statusText);

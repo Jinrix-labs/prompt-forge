@@ -211,6 +211,23 @@ DO NOT include any text outside the JSON. DO NOT use markdown code blocks.`;
 
         if (!responseText) {
             console.error('No text content found in AI response:', JSON.stringify(data, null, 2));
+            
+            // Check if Claude refused to process due to content policy
+            const claudeError = data.error || data.message || '';
+            if (claudeError.toLowerCase().includes('content policy') || 
+                claudeError.toLowerCase().includes('inappropriate') ||
+                claudeError.toLowerCase().includes('safety') ||
+                claudeError.toLowerCase().includes('refuse')) {
+                const res = NextResponse.json({ 
+                    error: 'Your prompt contains inappropriate content. Please try with different wording.',
+                    code: 'CONTENT_POLICY_VIOLATION'
+                }, { status: 400 });
+                res.headers.set('X-RateLimit-Limit', String(rl.limit));
+                res.headers.set('X-RateLimit-Remaining', String(Math.max(0, rl.remaining)));
+                res.headers.set('X-RateLimit-Used', String(rl.used));
+                return res;
+            }
+            
             const res = NextResponse.json({ error: 'No content received from AI' }, { status: 502 });
             res.headers.set('X-RateLimit-Limit', String(rl.limit));
             res.headers.set('X-RateLimit-Remaining', String(Math.max(0, rl.remaining)));
@@ -221,6 +238,27 @@ DO NOT include any text outside the JSON. DO NOT use markdown code blocks.`;
         // Clean up and aggressively extract the JSON object for Claude
         if (useClaude) {
             console.log('Raw Claude response text:', responseText);
+            
+            // Check if Claude refused to process due to content policy
+            const lowerResponse = responseText.toLowerCase();
+            if (lowerResponse.includes('i cannot') || 
+                lowerResponse.includes('i can\'t') ||
+                lowerResponse.includes('i\'m not able') ||
+                lowerResponse.includes('i am not able') ||
+                lowerResponse.includes('inappropriate') ||
+                lowerResponse.includes('content policy') ||
+                lowerResponse.includes('safety guidelines') ||
+                lowerResponse.includes('refuse') ||
+                lowerResponse.includes('decline')) {
+                const res = NextResponse.json({ 
+                    error: 'Your prompt contains inappropriate content. Please try with different wording.',
+                    code: 'CONTENT_POLICY_VIOLATION'
+                }, { status: 400 });
+                res.headers.set('X-RateLimit-Limit', String(rl.limit));
+                res.headers.set('X-RateLimit-Remaining', String(Math.max(0, rl.remaining)));
+                res.headers.set('X-RateLimit-Used', String(rl.used));
+                return res;
+            }
             
             // Try multiple JSON extraction methods
             let cleanJson = '';
