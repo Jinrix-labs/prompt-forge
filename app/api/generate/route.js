@@ -4,7 +4,7 @@ import { checkAndIncrementDailyLimit } from '../../../lib/rateLimit';
 // Vercel runtime hints
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
-export const maxDuration = 60; // seconds
+export const maxDuration = 10; // seconds (Vercel limit for hobby plans)
 
 export async function POST(request) {
     try {
