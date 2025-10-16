@@ -195,6 +195,7 @@ DO NOT include any text outside the JSON. DO NOT use markdown code blocks.`;
         let responseText = '';
         if (useClaude) {
             // Claude format
+            console.log('Claude raw response:', JSON.stringify(data, null, 2));
             for (const block of data.content || []) {
                 if (block.type === 'text' && typeof block.text === 'string') {
                     responseText = block.text.trim();
@@ -209,6 +210,7 @@ DO NOT include any text outside the JSON. DO NOT use markdown code blocks.`;
         }
 
         if (!responseText) {
+            console.error('No text content found in AI response:', JSON.stringify(data, null, 2));
             const res = NextResponse.json({ error: 'No content received from AI' }, { status: 502 });
             res.headers.set('X-RateLimit-Limit', String(rl.limit));
             res.headers.set('X-RateLimit-Remaining', String(Math.max(0, rl.remaining)));
@@ -235,8 +237,9 @@ DO NOT include any text outside the JSON. DO NOT use markdown code blocks.`;
             }
             const cleanJson = jsonMatch[0];
             console.log('Cleaned Claude JSON:', cleanJson);
+            let claudeParsed;
             try {
-                const claudeParsed = JSON.parse(cleanJson);
+                claudeParsed = JSON.parse(cleanJson);
             } catch (parseError) {
                 console.error('Failed to parse cleaned Claude JSON:', cleanJson, parseError);
                 const res = NextResponse.json({ error: 'Invalid JSON from Claude' }, { status: 502 });
@@ -245,7 +248,6 @@ DO NOT include any text outside the JSON. DO NOT use markdown code blocks.`;
                 res.headers.set('X-RateLimit-Used', String(rl.used));
                 return res;
             }
-            const claudeParsed = JSON.parse(cleanJson);
             console.log('Claude parsed response:', JSON.stringify(claudeParsed, null, 2));
             const res = NextResponse.json({ prompts: claudeParsed.prompts || [] });
             res.headers.set('X-RateLimit-Limit', String(rl.limit));
