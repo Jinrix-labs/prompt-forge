@@ -77,6 +77,8 @@ Requirements:
 - Balance technical precision with creative description
 - NO generic phrases like "person" - be specific about appearance, clothing, pose
 
+CRITICAL: For IMAGE content type, you MUST include a "negative" field with comprehensive negative prompts. For VIDEO content type, use empty string for negative field.
+
 CRITICAL OUTPUT RULES:
 Your response must be ONLY a single valid JSON object.
 DO NOT use markdown code blocks.
@@ -244,6 +246,7 @@ DO NOT include any text outside the JSON. DO NOT use markdown code blocks.`;
                 return res;
             }
             const claudeParsed = JSON.parse(cleanJson);
+            console.log('Claude parsed response:', JSON.stringify(claudeParsed, null, 2));
             const res = NextResponse.json({ prompts: claudeParsed.prompts || [] });
             res.headers.set('X-RateLimit-Limit', String(rl.limit));
             res.headers.set('X-RateLimit-Remaining', String(Math.max(0, rl.remaining)));
@@ -269,6 +272,7 @@ DO NOT include any text outside the JSON. DO NOT use markdown code blocks.`;
             }
         }
 
+        console.log('Groq parsed response:', JSON.stringify(groqParsed, null, 2));
         const res = NextResponse.json({ prompts: groqParsed.prompts || [] });
         res.headers.set('X-RateLimit-Limit', String(rl.limit));
         res.headers.set('X-RateLimit-Remaining', String(Math.max(0, rl.remaining)));

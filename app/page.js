@@ -592,9 +592,9 @@ export default function PromptGenerator() {
                                                 key={p.value}
                                                 onClick={() => {
                                                     setPlatform(p.value);
-                                                    if (p.strict && creativeMode) {
+                                                    if (p.strict) {
                                                         setCreativeMode(false);
-                                                    } else if (!p.strict && !creativeMode) {
+                                                    } else if (!p.strict) {
                                                         setCreativeMode(true);
                                                     }
                                                 }}
