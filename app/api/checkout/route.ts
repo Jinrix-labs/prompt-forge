@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
 
-export async function POST(req: Request) {
+export async function POST(_req: Request) {
     try {
         const { userId } = await auth()
 

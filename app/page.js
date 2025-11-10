@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Zap, Copy, Check, Loader2, Star, Trash2, Image, Video, Sparkles, Film, Wrench } from 'lucide-react';
+import { Zap, Copy, Check, Loader2, Star, Trash2, Image as ImageIcon, Video, Sparkles, Film, Wrench } from 'lucide-react';
 import { SignedIn, SignedOut, SignInButton, UserButton } from "@clerk/nextjs";
 import { UsageDisplay } from "@/components/UsageDisplay";
 import { ProGate } from "@/components/ProGate";
@@ -68,7 +68,7 @@ export default function PromptGenerator() {
     const [ugcPrompts, setUgcPrompts] = useState([]);
     const [productImage, setProductImage] = useState(null);
     const [imagePreview, setImagePreview] = useState(null);
-    const [usageInfo, setUsageInfo] = useState({ regular: null, ugc: null });
+    const [_usageInfo, setUsageInfo] = useState({ regular: null, ugc: null });
 
     // New UGC AI state
     const [ugcScript, setUgcScript] = useState('');
@@ -375,7 +375,7 @@ export default function PromptGenerator() {
         } finally {
             setUgcAILoading(false);
         }
-    }, [ugcBrand, ugcCategory, ugcCreator, ugcLength, ugcPlatform, ugcMessage, ugcHeroMessage, ugcCTA, ugcTone]);
+    }, [ugcBrand, ugcCategory, ugcCreator, ugcLength, ugcPlatform, ugcMessage, ugcHeroMessage, ugcCTA, ugcTone, narrationStyle, promptAdherence, promptStyle, sceneIntent, user.isPro]);
 
     // Suggestion function for auto-filling fields (using UGC API)
     const suggestContent = useCallback(async (type) => {
@@ -509,9 +509,9 @@ export default function PromptGenerator() {
         return favorites.some(fav => fav.prompt === item.prompt && fav.title === item.title);
     }, [favorites]);
 
-    const deleteFavorite = useCallback((item) => {
-        setFavorites(favorites.filter(fav => !(fav.prompt === item.prompt && fav.title === item.title)));
-    }, [favorites]);
+    // const deleteFavorite = useCallback((item) => {
+    //     setFavorites(favorites.filter(fav => !(fav.prompt === item.prompt && fav.title === item.title)));
+    // }, [favorites]);
 
     // Playground functions
     const generatePlaygroundPrompt = useCallback(() => {
@@ -734,7 +734,7 @@ export default function PromptGenerator() {
                     <div className="mb-6 p-4 rounded-lg border border-yellow-500/30 bg-yellow-500/10">
                         <div className="flex items-center justify-between gap-4">
                             <div>
-                                <div className="font-bold text-yellow-400">You're out of {rateLimited.scope === 'ugc' ? 'UGC' : 'regular'} prompts</div>
+                                <div className="font-bold text-yellow-400">You&apos;re out of {rateLimited.scope === 'ugc' ? 'UGC' : 'regular'} prompts</div>
                                 <div className="text-sm text-gray-300">Upgrade to Pro to keep going without interruptions.</div>
                             </div>
                             <UpgradeButton />
@@ -829,7 +829,7 @@ export default function PromptGenerator() {
                                 <div className="space-y-4">
                                     {/* Hero Message */}
                                     <div>
-                                        <label className="block text-xs font-bold text-gray-500 mb-2 tracking-wider">HERO MESSAGE (What's the main benefit?)</label>
+                                        <label className="block text-xs font-bold text-gray-500 mb-2 tracking-wider">HERO MESSAGE (What&apos;s the main benefit?)</label>
                                         <input
                                             type="text"
                                             value={ugcHeroMessage}
@@ -839,7 +839,7 @@ export default function PromptGenerator() {
                                         />
                                         <div className="flex items-center justify-between mt-1">
                                             <p className="text-xs text-gray-400">
-                                                Ex: "Lasts 12 hours", "Eco-friendly", "100% natural", etc.
+                                                Ex: &quot;Lasts 12 hours&quot;, &quot;Eco-friendly&quot;, &quot;100% natural&quot;, etc.
                                             </p>
                                             <button
                                                 onClick={() => suggestContent('hero')}
@@ -863,7 +863,7 @@ export default function PromptGenerator() {
                                         />
                                         <div className="flex items-center justify-between mt-1">
                                             <p className="text-xs text-gray-400">
-                                                Ex: "Try for free", "Limited time offer", "Get yours today!"
+                                                Ex: &quot;Try for free&quot;, &quot;Limited time offer&quot;, &quot;Get yours today!&quot;
                                             </p>
                                             <button
                                                 onClick={() => suggestContent('cta')}
@@ -935,6 +935,7 @@ export default function PromptGenerator() {
                                         </div>
                                     ) : (
                                         <div className="relative border-2 border-yellow-500 bg-black p-4">
+                                            {/* eslint-disable-next-line @next/next/no-img-element */}
                                             <img
                                                 src={imagePreview}
                                                 alt="Product preview"
@@ -998,7 +999,7 @@ export default function PromptGenerator() {
                                                     <option value="before-after">Before/After</option>
                                                 </select>
                                                 <p className="text-sm text-gray-500 italic mt-1">
-                                                    🎯 Use Prompt Style to shape how your video feels — "Cinematic" = smooth panning, "Selfie" = raw + authentic
+                                                    🎯 Use Prompt Style to shape how your video feels — &quot;Cinematic&quot; = smooth panning, &quot;Selfie&quot; = raw + authentic
                                                 </p>
                                             </div>
                                             <div>
@@ -1012,7 +1013,7 @@ export default function PromptGenerator() {
                                                     className="w-full px-4 py-3 bg-black border-2 border-gray-800 text-white placeholder-gray-600 focus:border-purple-500 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
                                                 />
                                                 <p className="text-sm text-gray-500 italic mt-1">
-                                                    💡 What's the main goal? "Transformation" = before/after shots, "Reaction" = genuine surprise moments
+                                                    💡 What&apos;s the main goal? &quot;Transformation&quot; = before/after shots, &quot;Reaction&quot; = genuine surprise moments
                                                 </p>
                                             </div>
                                             <div>
@@ -1026,7 +1027,7 @@ export default function PromptGenerator() {
                                                     className="w-full px-4 py-3 bg-black border-2 border-gray-800 text-white placeholder-gray-600 focus:border-purple-500 focus:outline-none resize-none disabled:opacity-50 disabled:cursor-not-allowed"
                                                 />
                                                 <p className="text-sm text-gray-500 italic mt-1">
-                                                    🗣️ Match your brand voice — "Witty" = clever one-liners, "Dramatic" = emotional storytelling
+                                                    🗣️ Match your brand voice — &quot;Witty&quot; = clever one-liners, &quot;Dramatic&quot; = emotional storytelling
                                                 </p>
                                             </div>
                                         </div>

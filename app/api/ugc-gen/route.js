@@ -182,7 +182,7 @@ Return this in JSON format like:
             let parsedResult;
             try {
                 parsedResult = JSON.parse(result);
-            } catch (parseError) {
+            } catch (_parseError) {
                 // If JSON parsing fails, return the raw result
                 return NextResponse.json({
                     success: true,

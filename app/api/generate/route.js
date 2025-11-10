@@ -370,7 +370,7 @@ DO NOT include any text outside the JSON. DO NOT use markdown code blocks.`;
         let groqParsed;
         try {
             groqParsed = JSON.parse(responseText);
-        } catch (parseError) {
+        } catch (_parseError) {
             const jsonMatch = responseText.match(/\{[\s\S]*\}$/);
             if (jsonMatch) {
                 groqParsed = JSON.parse(jsonMatch[0]);
