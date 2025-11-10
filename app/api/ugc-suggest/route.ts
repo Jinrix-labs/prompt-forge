@@ -49,9 +49,10 @@ export async function POST(req: Request) {
 
     } catch (err) {
         console.error("Claude Suggestion Error:", err);
+        const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
         return NextResponse.json({
             success: false,
-            error: err.message
+            error: errorMessage
         }, { status: 500 });
     }
 }
