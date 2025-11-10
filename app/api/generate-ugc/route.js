@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { checkAndIncrementDailyLimit } from '../../../lib/rateLimit';
+import { auth } from '@clerk/nextjs/server';
+import { checkAndTrackUsage } from '@/lib/usage';
 
 // Vercel runtime hints
 export const runtime = 'nodejs';
@@ -8,15 +9,30 @@ export const maxDuration = 60; // seconds
 
 export async function POST(request) {
     try {
+        const { userId } = await auth();
+        if (!userId) {
+            return NextResponse.json(
+                { error: 'Please sign in to generate UGC prompts' },
+                { status: 401 }
+            );
+        }
+
         const { brand, category, creator, length, platform, message, image, imageType } = await request.json();
-        // Basic per-IP rate limit for UGC prompts (e.g., 5/day)
-        const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
-        const rl = checkAndIncrementDailyLimit(`ugc:${ip}`, 5);
-        if (!rl.allowed) {
-            const res = NextResponse.json({ message: 'Daily UGC limit reached for free tier.' }, { status: 429 });
-            res.headers.set('X-RateLimit-Limit', String(rl.limit));
-            res.headers.set('X-RateLimit-Remaining', String(rl.remaining));
-            res.headers.set('X-RateLimit-Used', String(rl.used));
+
+        const usage = await checkAndTrackUsage(userId, 'ugc');
+        if (!usage.allowed) {
+            const res = NextResponse.json(
+                {
+                    error: usage.isPro
+                        ? `Monthly UGC limit reached (${usage.limit}/month). Contact support for enterprise plans.`
+                        : `Daily UGC limit reached (${usage.limit}/day). Upgrade to Pro for 200 UGC prompts per month!`,
+                    upgrade: !usage.isPro,
+                },
+                { status: 429 }
+            );
+            res.headers.set('X-RateLimit-Limit', String(usage.limit === -1 ? '∞' : String(usage.limit)));
+            res.headers.set('X-RateLimit-Remaining', String(usage.remaining === -1 ? '∞' : String(usage.remaining)));
+            res.headers.set('X-RateLimit-Used', String(usage.used));
             return res;
         }
 
@@ -84,6 +100,15 @@ CRITICAL UGC REQUIREMENTS:
 6. UGC aesthetic: "smartphone quality", "authentic", "relatable", "unpolished but professional"
 7. ${image ? 'Reference key product visuals from the image (main colors, packaging style, brand name if visible). Keep it natural - example: "holding sleek white bottle with mint green accents" rather than obsessing over tiny label text.' : 'Describe generic product appearance'}
 8. Break down into timeline segments (0-3s, 3-8s, etc.)
+
+🚫 CRITICAL SAFETY REQUIREMENTS:
+🚫 NEVER include celebrity names, public figures, or famous people in any content
+🚫 NEVER reference actors, musicians, influencers, politicians, or any public personalities
+🚫 NEVER use names like "Taylor Swift", "Kim Kardashian", "Elon Musk", "Oprah", etc.
+🚫 NEVER create content that could be mistaken for celebrity endorsement
+✅ Use generic terms like "creator", "user", "person", "someone", "people"
+✅ Focus on authentic everyday people and relatable scenarios
+✅ Keep all content original and non-celebrity focused
 
 STRUCTURE FOR ${length}-SECOND VIDEO:
 ${length === '10' ? `
@@ -164,9 +189,9 @@ DO NOT include markdown. ONLY return valid JSON.`
 
         const parsed = JSON.parse(responseText);
         const res = NextResponse.json(parsed);
-        res.headers.set('X-RateLimit-Limit', String(rl.limit));
-        res.headers.set('X-RateLimit-Remaining', String(Math.max(0, rl.remaining)));
-        res.headers.set('X-RateLimit-Used', String(rl.used));
+        res.headers.set('X-RateLimit-Limit', String(usage.limit === -1 ? '∞' : String(usage.limit)));
+        res.headers.set('X-RateLimit-Remaining', String(usage.remaining === -1 ? '∞' : String(usage.remaining)));
+        res.headers.set('X-RateLimit-Used', String(usage.used));
         return res;
 
     } catch (error) {

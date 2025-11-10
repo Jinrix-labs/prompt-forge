@@ -1,14 +1,12 @@
 import { NextResponse } from 'next/server';
 
 export async function GET() {
+    const hasGroq = !!process.env.GROQ_API_KEY;
+    const hasClaude = !!process.env.ANTHROPIC_API_KEY;
+
     return NextResponse.json({
-        hasGroqKey: !!process.env.GROQ_API_KEY,
-        hasClaudeKey: !!process.env.ANTHROPIC_API_KEY,
-        groqKeyLength: process.env.GROQ_API_KEY?.length || 0,
-        claudeKeyLength: process.env.ANTHROPIC_API_KEY?.length || 0,
-        nodeEnv: process.env.NODE_ENV,
-        vercelEnv: process.env.VERCEL_ENV,
-        vercelRegion: process.env.VERCEL_REGION,
+        groq: hasGroq ? 'Configured' : 'Missing',
+        claude: hasClaude ? 'Configured' : 'Missing',
         timestamp: new Date().toISOString()
     });
 }

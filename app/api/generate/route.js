@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { checkAndIncrementDailyLimit } from '../../../lib/rateLimit';
+import { auth } from '@clerk/nextjs/server';
+import { checkAndTrackUsage } from '@/lib/usage';
 
 // Vercel runtime hints
 export const runtime = 'nodejs';
@@ -8,6 +9,15 @@ export const maxDuration = 10; // seconds (Vercel limit for hobby plans)
 
 export async function POST(request) {
     try {
+        const { userId } = await auth();
+
+        if (!userId) {
+            return NextResponse.json(
+                { error: 'Please sign in to generate prompts' },
+                { status: 401 }
+            );
+        }
+
         const { userInput, contentType, platform, creativeMode = false } = await request.json();
 
         if (!userInput || !contentType || !platform) {
@@ -16,14 +26,20 @@ export async function POST(request) {
 
         console.log('Request params:', { userInput, contentType, platform, creativeMode });
 
-        // Basic per-IP rate limit for regular prompts (e.g., 10/day)
-        const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
-        const rl = checkAndIncrementDailyLimit(`regular:${ip}`, 10);
-        if (!rl.allowed) {
-            const res = NextResponse.json({ message: 'Daily limit reached for free tier.' }, { status: 429 });
-            res.headers.set('X-RateLimit-Limit', String(rl.limit));
-            res.headers.set('X-RateLimit-Remaining', String(rl.remaining));
-            res.headers.set('X-RateLimit-Used', String(rl.used));
+        const usage = await checkAndTrackUsage(userId, 'regular');
+        if (!usage.allowed) {
+            const res = NextResponse.json(
+                {
+                    error: usage.isPro
+                        ? 'Monthly limit reached'
+                        : 'Daily limit reached. Upgrade to Pro for unlimited regular prompts!',
+                    upgrade: !usage.isPro,
+                },
+                { status: 429 }
+            );
+            res.headers.set('X-RateLimit-Limit', String(usage.limit));
+            res.headers.set('X-RateLimit-Remaining', String(usage.remaining));
+            res.headers.set('X-RateLimit-Used', String(usage.used));
             return res;
         }
 
@@ -177,9 +193,9 @@ DO NOT include any text outside the JSON. DO NOT use markdown code blocks.`;
                 { error: 'Failed to generate prompts', details: errorText, status: response.status },
                 { status: 502 }
             );
-            res.headers.set('X-RateLimit-Limit', String(rl.limit));
-            res.headers.set('X-RateLimit-Remaining', String(Math.max(0, rl.remaining)));
-            res.headers.set('X-RateLimit-Used', String(rl.used));
+            res.headers.set('X-RateLimit-Limit', String(usage.limit));
+            res.headers.set('X-RateLimit-Remaining', String(usage.remaining));
+            res.headers.set('X-RateLimit-Used', String(usage.used));
             return res;
         }
 
@@ -211,37 +227,37 @@ DO NOT include any text outside the JSON. DO NOT use markdown code blocks.`;
 
         if (!responseText) {
             console.error('No text content found in AI response:', JSON.stringify(data, null, 2));
-            
+
             // Check if Claude refused to process due to content policy
             const claudeError = data.error || data.message || '';
-            if (claudeError.toLowerCase().includes('content policy') || 
+            if (claudeError.toLowerCase().includes('content policy') ||
                 claudeError.toLowerCase().includes('inappropriate') ||
                 claudeError.toLowerCase().includes('safety') ||
                 claudeError.toLowerCase().includes('refuse')) {
-                const res = NextResponse.json({ 
+                const res = NextResponse.json({
                     error: 'Your prompt contains inappropriate content. Please try with different wording.',
                     code: 'CONTENT_POLICY_VIOLATION'
                 }, { status: 400 });
-                res.headers.set('X-RateLimit-Limit', String(rl.limit));
-                res.headers.set('X-RateLimit-Remaining', String(Math.max(0, rl.remaining)));
-                res.headers.set('X-RateLimit-Used', String(rl.used));
+                res.headers.set('X-RateLimit-Limit', String(usage.limit));
+                res.headers.set('X-RateLimit-Remaining', String(usage.remaining));
+                res.headers.set('X-RateLimit-Used', String(usage.used));
                 return res;
             }
-            
+
             const res = NextResponse.json({ error: 'No content received from AI' }, { status: 502 });
-            res.headers.set('X-RateLimit-Limit', String(rl.limit));
-            res.headers.set('X-RateLimit-Remaining', String(Math.max(0, rl.remaining)));
-            res.headers.set('X-RateLimit-Used', String(rl.used));
+            res.headers.set('X-RateLimit-Limit', String(usage.limit));
+            res.headers.set('X-RateLimit-Remaining', String(usage.remaining));
+            res.headers.set('X-RateLimit-Used', String(usage.used));
             return res;
         }
 
         // Clean up and aggressively extract the JSON object for Claude
         if (useClaude) {
             console.log('Raw Claude response text:', responseText);
-            
+
             // Check if Claude refused to process due to content policy
             const lowerResponse = responseText.toLowerCase();
-            if (lowerResponse.includes('i cannot') || 
+            if (lowerResponse.includes('i cannot') ||
                 lowerResponse.includes('i can\'t') ||
                 lowerResponse.includes('i\'m not able') ||
                 lowerResponse.includes('i am not able') ||
@@ -250,26 +266,26 @@ DO NOT include any text outside the JSON. DO NOT use markdown code blocks.`;
                 lowerResponse.includes('safety guidelines') ||
                 lowerResponse.includes('refuse') ||
                 lowerResponse.includes('decline')) {
-                const res = NextResponse.json({ 
+                const res = NextResponse.json({
                     error: 'Your prompt contains inappropriate content. Please try with different wording.',
                     code: 'CONTENT_POLICY_VIOLATION'
                 }, { status: 400 });
-                res.headers.set('X-RateLimit-Limit', String(rl.limit));
-                res.headers.set('X-RateLimit-Remaining', String(Math.max(0, rl.remaining)));
-                res.headers.set('X-RateLimit-Used', String(rl.used));
+                res.headers.set('X-RateLimit-Limit', String(usage.limit));
+                res.headers.set('X-RateLimit-Remaining', String(usage.remaining));
+                res.headers.set('X-RateLimit-Used', String(usage.used));
                 return res;
             }
-            
+
             // Try multiple JSON extraction methods
             let cleanJson = '';
-            
+
             // Method 1: Remove markdown code blocks
             let cleaned = responseText
                 .replace(/```json\s*/gi, '')
                 .replace(/```\s*/g, '')
                 .replace(/`/g, '')
                 .trim();
-            
+
             // Method 2: Find JSON object with more flexible regex
             const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
             if (jsonMatch) {
@@ -291,62 +307,62 @@ DO NOT include any text outside the JSON. DO NOT use markdown code blocks.`;
                     }
                 }
             }
-            
+
             if (!cleanJson) {
                 console.error('No valid JSON found in Claude response:', responseText);
-                const res = NextResponse.json({ 
+                const res = NextResponse.json({
                     error: 'Invalid response format from Claude',
                     debug: {
                         rawResponse: responseText.substring(0, 500) + '...',
                         cleaned: cleaned.substring(0, 500) + '...'
                     }
                 }, { status: 502 });
-                res.headers.set('X-RateLimit-Limit', String(rl.limit));
-                res.headers.set('X-RateLimit-Remaining', String(Math.max(0, rl.remaining)));
-                res.headers.set('X-RateLimit-Used', String(rl.used));
+                res.headers.set('X-RateLimit-Limit', String(usage.limit));
+                res.headers.set('X-RateLimit-Remaining', String(usage.remaining));
+                res.headers.set('X-RateLimit-Used', String(usage.used));
                 return res;
             }
-            
+
             console.log('Extracted JSON:', cleanJson);
             let claudeParsed;
             try {
                 claudeParsed = JSON.parse(cleanJson);
             } catch (parseError) {
                 console.error('Failed to parse Claude JSON:', cleanJson, parseError);
-                const res = NextResponse.json({ 
+                const res = NextResponse.json({
                     error: 'Invalid JSON from Claude',
                     debug: {
                         extractedJson: cleanJson,
                         parseError: parseError.message
                     }
                 }, { status: 502 });
-                res.headers.set('X-RateLimit-Limit', String(rl.limit));
-                res.headers.set('X-RateLimit-Remaining', String(Math.max(0, rl.remaining)));
-                res.headers.set('X-RateLimit-Used', String(rl.used));
+                res.headers.set('X-RateLimit-Limit', String(usage.limit));
+                res.headers.set('X-RateLimit-Remaining', String(usage.remaining));
+                res.headers.set('X-RateLimit-Used', String(usage.used));
                 return res;
             }
-            
+
             console.log('Claude parsed response:', JSON.stringify(claudeParsed, null, 2));
-            
+
             // Validate the parsed response
             if (!claudeParsed.prompts || !Array.isArray(claudeParsed.prompts)) {
                 console.error('Invalid prompts structure from Claude:', claudeParsed);
-                const res = NextResponse.json({ 
+                const res = NextResponse.json({
                     error: 'Invalid prompts structure from Claude',
                     debug: {
                         parsedResponse: claudeParsed
                     }
                 }, { status: 502 });
-                res.headers.set('X-RateLimit-Limit', String(rl.limit));
-                res.headers.set('X-RateLimit-Remaining', String(Math.max(0, rl.remaining)));
-                res.headers.set('X-RateLimit-Used', String(rl.used));
+                res.headers.set('X-RateLimit-Limit', String(usage.limit));
+                res.headers.set('X-RateLimit-Remaining', String(usage.remaining));
+                res.headers.set('X-RateLimit-Used', String(usage.used));
                 return res;
             }
-            
+
             const res = NextResponse.json({ prompts: claudeParsed.prompts });
-            res.headers.set('X-RateLimit-Limit', String(rl.limit));
-            res.headers.set('X-RateLimit-Remaining', String(Math.max(0, rl.remaining)));
-            res.headers.set('X-RateLimit-Used', String(rl.used));
+            res.headers.set('X-RateLimit-Limit', String(usage.limit));
+            res.headers.set('X-RateLimit-Remaining', String(usage.remaining));
+            res.headers.set('X-RateLimit-Used', String(usage.used));
             return res;
         }
 
@@ -361,18 +377,18 @@ DO NOT include any text outside the JSON. DO NOT use markdown code blocks.`;
             } else {
                 console.error('Failed to parse JSON:', responseText);
                 const res = NextResponse.json({ error: 'Invalid response format' }, { status: 502 });
-                res.headers.set('X-RateLimit-Limit', String(rl.limit));
-                res.headers.set('X-RateLimit-Remaining', String(Math.max(0, rl.remaining)));
-                res.headers.set('X-RateLimit-Used', String(rl.used));
+                res.headers.set('X-RateLimit-Limit', String(usage.limit));
+                res.headers.set('X-RateLimit-Remaining', String(usage.remaining));
+                res.headers.set('X-RateLimit-Used', String(usage.used));
                 return res;
             }
         }
 
         console.log('Groq parsed response:', JSON.stringify(groqParsed, null, 2));
         const res = NextResponse.json({ prompts: groqParsed.prompts || [] });
-        res.headers.set('X-RateLimit-Limit', String(rl.limit));
-        res.headers.set('X-RateLimit-Remaining', String(Math.max(0, rl.remaining)));
-        res.headers.set('X-RateLimit-Used', String(rl.used));
+        res.headers.set('X-RateLimit-Limit', String(usage.limit));
+        res.headers.set('X-RateLimit-Remaining', String(usage.remaining));
+        res.headers.set('X-RateLimit-Used', String(usage.used));
         return res;
     } catch (error) {
         console.error('Server error:', error);
