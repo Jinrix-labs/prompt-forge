@@ -495,7 +495,22 @@ export default function PromptGenerator() {
         }
     }, [ugcScript, ugcTimeline, ugcPromptIdeas]);
 
-    const toggleFavorite = useCallback((item) => {
+    const toggleFavorite = useCallback(async (item) => {
+        // Check if user is Pro
+        try {
+            const proCheck = await fetch('/api/check-pro');
+            const { isPro } = await proCheck.json();
+            
+            if (!isPro) {
+                alert('Upgrade to Pro to save favorites!');
+                return;
+            }
+        } catch (error) {
+            console.error('Failed to check pro status:', error);
+            alert('Unable to verify Pro status. Please try again.');
+            return;
+        }
+        
         const itemWithMeta = { ...item, platform, contentType, timestamp: Date.now() };
         const isFavorited = favorites.some(fav => fav.prompt === item.prompt && fav.title === item.title);
 
@@ -632,7 +647,22 @@ export default function PromptGenerator() {
     }, [prompts, contentType, platform, creativeMode]);
 
     // Save prompt function
-    const savePrompt = useCallback((prompt, platform = null, contentType = null) => {
+    const savePrompt = useCallback(async (prompt, platform = null, contentType = null) => {
+        // Check if user is Pro
+        try {
+            const proCheck = await fetch('/api/check-pro');
+            const { isPro } = await proCheck.json();
+            
+            if (!isPro) {
+                alert('Upgrade to Pro to save prompts!');
+                return;
+            }
+        } catch (error) {
+            console.error('Failed to check pro status:', error);
+            alert('Unable to verify Pro status. Please try again.');
+            return;
+        }
+        
         const stored = JSON.parse(localStorage.getItem('zunno_prompts') || '[]');
         const newPrompt = {
             id: Date.now(),
@@ -745,7 +775,8 @@ export default function PromptGenerator() {
 
                 {/* UGC Generator Tab */}
                 {activeTab === 'ugc' && (
-                    <>
+                    <ProGate feature="UGC Generator">
+                        <>
                         <div className="mb-6 p-4 border-2 border-yellow-500/30 bg-yellow-500/10">
                             <div className="flex items-start gap-3">
                                 <Sparkles className="w-5 h-5 text-yellow-500 mt-0.5 flex-shrink-0" />
@@ -1327,7 +1358,8 @@ export default function PromptGenerator() {
                                 )}
                             </div>
                         )}
-                    </>
+                        </>
+                    </ProGate>
                 )}
 
                 {/* Regular Generate Tab */}
@@ -1604,7 +1636,8 @@ export default function PromptGenerator() {
 
                 {/* Playground Tab */}
                 {activeTab === 'playground' && (
-                    <>
+                    <ProGate feature="Playground">
+                        <>
                         <div className="mb-6 p-4 border-2 border-green-500/30 bg-green-500/10">
                             <div className="flex items-start gap-3">
                                 <Wrench className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
@@ -1766,7 +1799,8 @@ export default function PromptGenerator() {
                                 </div>
                             </div>
                         )}
-                    </>
+                        </>
+                    </ProGate>
                 )}
 
             </div>

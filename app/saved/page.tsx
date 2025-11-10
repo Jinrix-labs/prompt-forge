@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Copy, Trash2, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
+import { ProGate } from '@/components/ProGate';
 
 type SavedPrompt = {
     id: number;
@@ -47,21 +48,22 @@ export default function SavedPromptsPage() {
             </div>
 
             <div className="relative z-10 max-w-6xl mx-auto px-6 py-8">
-                {/* Header */}
-                <div className="flex items-center gap-4 mb-8">
-                    <Link
-                        href="/"
-                        className="p-2 border-2 border-gray-700 hover:border-cyan-500 transition-all"
-                    >
-                        <ArrowLeft className="w-5 h-5" />
-                    </Link>
-                    <div>
-                        <h1 className="text-3xl font-black text-white">📂 SAVED PROMPTS</h1>
-                        <p className="text-gray-400">Manage your saved prompts</p>
+                <ProGate feature="Saved Prompts">
+                    {/* Header */}
+                    <div className="flex items-center gap-4 mb-8">
+                        <Link
+                            href="/"
+                            className="p-2 border-2 border-gray-700 hover:border-cyan-500 transition-all"
+                        >
+                            <ArrowLeft className="w-5 h-5" />
+                        </Link>
+                        <div>
+                            <h1 className="text-3xl font-black text-white">📂 SAVED PROMPTS</h1>
+                            <p className="text-gray-400">Manage your saved prompts</p>
+                        </div>
                     </div>
-                </div>
 
-                {prompts.length === 0 ? (
+                    {prompts.length === 0 ? (
                     <div className="border-2 border-gray-800 bg-gray-900/50 p-16 text-center">
                         <div className="text-6xl mb-4">📝</div>
                         <p className="text-gray-500 text-lg">No prompts saved yet.</p>
@@ -132,7 +134,8 @@ export default function SavedPromptsPage() {
                             </div>
                         ))}
                     </div>
-                )}
+                    )}
+                </ProGate>
             </div>
         </div>
     );
