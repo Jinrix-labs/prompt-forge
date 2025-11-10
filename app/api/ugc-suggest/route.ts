@@ -39,7 +39,7 @@ export async function POST(req: Request) {
 
         const suggestions = rawText.trim()
             .split("\n")
-            .map(s => s.replace(/^[-\u2022]\s*/, ''))
+            .map((s: string) => s.replace(/^[-\u2022]\s*/, ''))
             .filter(Boolean);
 
         return NextResponse.json({
