@@ -26,7 +26,8 @@ export async function POST(_req: Request) {
         let stripeCustomerId = user?.stripe_customer_id as string | undefined
 
         if (!stripeCustomerId) {
-            const clerkUser = await clerkClient.users.getUser(userId)
+            const client = await clerkClient()
+            const clerkUser = await client.users.getUser(userId)
 
             const customer = await stripe.customers.create({
                 email: clerkUser.emailAddresses[0]?.emailAddress,
