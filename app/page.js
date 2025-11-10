@@ -68,7 +68,8 @@ export default function PromptGenerator() {
     const [ugcPrompts, setUgcPrompts] = useState([]);
     const [productImage, setProductImage] = useState(null);
     const [imagePreview, setImagePreview] = useState(null);
-    const [_usageInfo, setUsageInfo] = useState({ regular: null, ugc: null });
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const [usageInfo, setUsageInfo] = useState({ regular: null, ugc: null });
 
     // New UGC AI state
     const [ugcScript, setUgcScript] = useState('');
@@ -916,7 +917,7 @@ export default function PromptGenerator() {
                                             <label className="block p-8 text-center cursor-pointer">
                                                 <div className="flex flex-col items-center gap-2">
                                                     <div className="w-12 h-12 rounded-full bg-yellow-500/20 flex items-center justify-center">
-                                                        <Image className="w-6 h-6 text-yellow-500" />
+                                                        <ImageIcon className="w-6 h-6 text-yellow-500" />
                                                     </div>
                                                     <div className="text-sm text-gray-400">
                                                         <span className="text-yellow-500 font-bold">Click to upload</span> product photo
@@ -1347,7 +1348,7 @@ export default function PromptGenerator() {
                                             : 'border-gray-700 text-gray-500 hover:border-gray-600'
                                             }`}
                                     >
-                                        <Image className="w-5 h-5" />
+                                        <ImageIcon className="w-5 h-5" />
                                         IMAGE
                                     </button>
                                     <button

@@ -23,7 +23,14 @@ const eslintConfig = [
   {
     rules: {
       "@typescript-eslint/no-explicit-any": "off",
-      "jsx-a11y/alt-text": "off"
+      "jsx-a11y/alt-text": "off",
+      "@typescript-eslint/no-unused-vars": [
+        "warn",
+        {
+          "argsIgnorePattern": "^_",
+          "varsIgnorePattern": "^_"
+        }
+      ]
     }
   }
 ];
