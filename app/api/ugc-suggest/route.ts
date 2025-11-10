@@ -1,7 +1,7 @@
 // /app/api/ugc-suggest/route.ts
 import { NextResponse } from "next/server";
 
-export async function POST(req) {
+export async function POST(req: Request) {
     const { type, productName, productCategory, creatorDemo, tone, platform } = await req.json();
 
     const prompt = type === "hero"
