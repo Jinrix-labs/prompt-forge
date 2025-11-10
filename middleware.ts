@@ -4,6 +4,7 @@ const isPublicRoute = createRouteMatcher([
     '/',
     '/sign-in(.*)',
     '/sign-up(.*)',
+    '/saved',  // Make it public so ProGate handles auth instead of middleware redirect
     '/api/webhook(.*)', // Stripe webhooks
 ]);
 
