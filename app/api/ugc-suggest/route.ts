@@ -9,10 +9,18 @@ export async function POST(req: Request) {
         : `Give 3 short, punchy CTAs for a product called \"${productName}\".\nCategory: ${productCategory}\nPlatform: ${platform}\nTone: ${tone}\nOnly return the 3 CTAs in a list.`;
 
     try {
+        const apiKey = process.env.ANTHROPIC_API_KEY;
+        if (!apiKey) {
+            return NextResponse.json({
+                success: false,
+                error: "ANTHROPIC_API_KEY not configured"
+            }, { status: 500 });
+        }
+
         const response = await fetch("https://api.anthropic.com/v1/messages", {
             method: "POST",
             headers: {
-                "x-api-key": process.env.ANTHROPIC_API_KEY,
+                "x-api-key": apiKey,
                 "content-type": "application/json",
                 "anthropic-version": "2023-06-01",
             },
