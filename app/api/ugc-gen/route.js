@@ -136,7 +136,11 @@ Return this in JSON format like:
     "image": "Prompt for a studio-style close-up of product",
     "video": "Prompt for Sora-style demo in kitchen"
   }
-}`;
+}
+
+DO NOT use quotation marks for emphasis within prompt strings (they break JSON).
+Instead of "synthwave" style, use: synthwave style
+Instead of "magical girl" costume, use: magical girl costume`;
         }
 
         const response = await fetch("https://api.anthropic.com/v1/messages", {
@@ -178,10 +182,53 @@ Return this in JSON format like:
                 suggestion: true
             });
         } else {
+            // Robust JSON extraction function
+            function extractAndParseJSON(text) {
+                try {
+                    // First try direct parse
+                    return JSON.parse(text);
+                } catch (e) {
+                    // If that fails, try to fix common issues
+                    let cleaned = text;
+                    
+                    // Remove markdown code blocks if present
+                    cleaned = cleaned.replace(/```json\n?/gi, '').replace(/```\n?/g, '').replace(/`/g, '').trim();
+                    
+                    // Find JSON object
+                    const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+                    if (!jsonMatch) {
+                        // Try to find JSON array
+                        const arrayMatch = cleaned.match(/\[[\s\S]*\]/);
+                        if (arrayMatch) {
+                            cleaned = `{"prompts": ${arrayMatch[0]}}`;
+                        } else {
+                            throw new Error('No JSON structure found');
+                        }
+                    } else {
+                        cleaned = jsonMatch[0];
+                    }
+                    
+                    // Fix escaped quotes within strings (the main issue)
+                    // Remove escaped quotes from emphasis: \"word\" becomes word
+                    cleaned = cleaned.replace(/\\"([^"]*?)\\"/g, (match, p1) => {
+                        return p1;
+                    });
+                    
+                    // Try parsing again
+                    try {
+                        return JSON.parse(cleaned);
+                    } catch (e2) {
+                        console.error('Failed to parse JSON after cleaning:', e2);
+                        console.error('Cleaned JSON:', cleaned.substring(0, 500));
+                        throw new Error('Invalid JSON from Claude after cleaning attempts');
+                    }
+                }
+            }
+
             // Try to parse the JSON response for full scripts
             let parsedResult;
             try {
-                parsedResult = JSON.parse(result);
+                parsedResult = extractAndParseJSON(result);
             } catch (_parseError) {
                 // If JSON parsing fails, return the raw result
                 return NextResponse.json({

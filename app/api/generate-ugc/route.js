@@ -153,7 +153,10 @@ Respond ONLY with valid JSON:
   ]
 }
 
-DO NOT include markdown. ONLY return valid JSON.`
+DO NOT include markdown. ONLY return valid JSON.
+DO NOT use quotation marks for emphasis within prompt strings (they break JSON).
+Instead of "synthwave" style, use: synthwave style
+Instead of "magical girl" costume, use: magical girl costume`
         });
 
         const response = await fetch("https://api.anthropic.com/v1/messages", {
@@ -184,10 +187,50 @@ DO NOT include markdown. ONLY return valid JSON.`
         const data = await response.json();
         let responseText = data.content[0].text.trim();
 
-        // Strip markdown if present
-        responseText = responseText.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
+        // Robust JSON extraction function
+        function extractAndParseJSON(text) {
+            try {
+                // First try direct parse
+                return JSON.parse(text);
+            } catch (e) {
+                // If that fails, try to fix common issues
+                let cleaned = text;
+                
+                // Remove markdown code blocks if present
+                cleaned = cleaned.replace(/```json\n?/gi, '').replace(/```\n?/g, '').replace(/`/g, '').trim();
+                
+                // Find JSON object
+                const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+                if (!jsonMatch) {
+                    // Try to find JSON array
+                    const arrayMatch = cleaned.match(/\[[\s\S]*\]/);
+                    if (arrayMatch) {
+                        cleaned = `{"prompts": ${arrayMatch[0]}}`;
+                    } else {
+                        throw new Error('No JSON structure found');
+                    }
+                } else {
+                    cleaned = jsonMatch[0];
+                }
+                
+                // Fix escaped quotes within strings (the main issue)
+                // Remove escaped quotes from emphasis: \"word\" becomes word
+                cleaned = cleaned.replace(/\\"([^"]*?)\\"/g, (match, p1) => {
+                    return p1;
+                });
+                
+                // Try parsing again
+                try {
+                    return JSON.parse(cleaned);
+                } catch (e2) {
+                    console.error('Failed to parse JSON after cleaning:', e2);
+                    console.error('Cleaned JSON:', cleaned.substring(0, 500));
+                    throw new Error('Invalid JSON from Claude after cleaning attempts');
+                }
+            }
+        }
 
-        const parsed = JSON.parse(responseText);
+        const parsed = extractAndParseJSON(responseText);
         const res = NextResponse.json(parsed);
         res.headers.set('X-RateLimit-Limit', String(usage.limit === -1 ? '∞' : String(usage.limit)));
         res.headers.set('X-RateLimit-Remaining', String(usage.remaining === -1 ? '∞' : String(usage.remaining)));
