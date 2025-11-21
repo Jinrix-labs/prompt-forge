@@ -83,7 +83,9 @@ ${safetyGuidelines}
 Requirements:
 - Make prompts DETAILED but not flowery (75-100 words is perfect)
 - Paint a complete picture with specific visual details
-- Use emphasis with quotes for important elements: "keyword"
+- DO NOT use quotation marks for emphasis within prompt text (they break JSON parsing)
+- Instead of "synthwave" style, use: synthwave style
+- Instead of "magical girl" costume, use: magical girl costume
 - Include rich descriptive terms: colors, lighting, atmosphere, composition
 - ALWAYS include technical/quality terms at the end: "detailed illustration, vibrant colors, cinematic lighting, 8k, highly detailed"
 - Structure: [detailed subject with action], [environment details], [lighting/atmosphere], [art style], [quality tags]
@@ -100,6 +102,7 @@ Your response must be ONLY a single valid JSON object.
 DO NOT use markdown code blocks.
 DO NOT use backticks.
 DO NOT add any text before or after the JSON.
+DO NOT use quotation marks for emphasis within prompt strings (they break JSON).
 Just the raw JSON starting with { and ending with }.
 
 GOOD EXAMPLE:
@@ -276,64 +279,59 @@ DO NOT include any text outside the JSON. DO NOT use markdown code blocks.`;
                 return res;
             }
 
-            // Try multiple JSON extraction methods
-            let cleanJson = '';
-
-            // Method 1: Remove markdown code blocks
-            let cleaned = responseText
-                .replace(/```json\s*/gi, '')
-                .replace(/```\s*/g, '')
-                .replace(/`/g, '')
-                .trim();
-
-            // Method 2: Find JSON object with more flexible regex
-            const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
-            if (jsonMatch) {
-                cleanJson = jsonMatch[0];
-            } else {
-                // Method 3: Try to find JSON array
-                const arrayMatch = cleaned.match(/\[[\s\S]*\]/);
-                if (arrayMatch) {
-                    cleanJson = `{"prompts": ${arrayMatch[0]}}`;
-                } else {
-                    // Method 4: Look for any JSON-like structure
-                    const anyJsonMatch = cleaned.match(/\{[\s\S]*\}|\[[\s\S]*\]/);
-                    if (anyJsonMatch) {
-                        cleanJson = anyJsonMatch[0];
-                        // If it's an array, wrap it in prompts
-                        if (cleanJson.startsWith('[')) {
-                            cleanJson = `{"prompts": ${cleanJson}}`;
+            // Robust JSON extraction function
+            function extractAndParseJSON(text) {
+                try {
+                    // First try direct parse
+                    return JSON.parse(text);
+                } catch (e) {
+                    // If that fails, try to fix common issues
+                    let cleaned = text;
+                    
+                    // Remove markdown code blocks if present
+                    cleaned = cleaned.replace(/```json\n?/gi, '').replace(/```\n?/g, '').replace(/`/g, '').trim();
+                    
+                    // Find JSON object
+                    const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+                    if (!jsonMatch) {
+                        // Try to find JSON array
+                        const arrayMatch = cleaned.match(/\[[\s\S]*\]/);
+                        if (arrayMatch) {
+                            cleaned = `{"prompts": ${arrayMatch[0]}}`;
+                        } else {
+                            throw new Error('No JSON structure found');
                         }
+                    } else {
+                        cleaned = jsonMatch[0];
+                    }
+                    
+                    // Fix escaped quotes within strings (the main issue)
+                    // Remove escaped quotes from emphasis: \"word\" becomes word
+                    cleaned = cleaned.replace(/\\"([^"]*?)\\"/g, (match, p1) => {
+                        return p1;
+                    });
+                    
+                    // Try parsing again
+                    try {
+                        return JSON.parse(cleaned);
+                    } catch (e2) {
+                        console.error('Failed to parse JSON after cleaning:', e2);
+                        console.error('Cleaned JSON:', cleaned.substring(0, 500));
+                        throw new Error('Invalid JSON from Claude after cleaning attempts');
                     }
                 }
             }
 
-            if (!cleanJson) {
-                console.error('No valid JSON found in Claude response:', responseText);
-                const res = NextResponse.json({
-                    error: 'Invalid response format from Claude',
-                    debug: {
-                        rawResponse: responseText.substring(0, 500) + '...',
-                        cleaned: cleaned.substring(0, 500) + '...'
-                    }
-                }, { status: 502 });
-                res.headers.set('X-RateLimit-Limit', String(usage.limit));
-                res.headers.set('X-RateLimit-Remaining', String(usage.remaining));
-                res.headers.set('X-RateLimit-Used', String(usage.used));
-                return res;
-            }
-
-            console.log('Extracted JSON:', cleanJson);
             let claudeParsed;
             try {
-                claudeParsed = JSON.parse(cleanJson);
+                claudeParsed = extractAndParseJSON(responseText);
             } catch (parseError) {
-                console.error('Failed to parse Claude JSON:', cleanJson, parseError);
+                console.error('Failed to parse Claude JSON:', parseError);
                 const res = NextResponse.json({
                     error: 'Invalid JSON from Claude',
                     debug: {
-                        extractedJson: cleanJson,
-                        parseError: parseError.message
+                        parseError: parseError.message,
+                        rawResponse: responseText.substring(0, 500) + '...'
                     }
                 }, { status: 502 });
                 res.headers.set('X-RateLimit-Limit', String(usage.limit));
