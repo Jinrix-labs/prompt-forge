@@ -181,9 +181,25 @@ export default function PromptGenerator() {
                 }));
             }
 
+            // Not signed in
+            if (response.status === 401) {
+                const errorData = await response.json().catch(() => ({}));
+                const msg = errorData?.error || "Please sign in to generate prompts.";
+                alert("🔐 " + msg);
+                return;
+            }
+
             if (response.status === 429) {
                 const errorData = await response.json().catch(() => ({}));
                 setRateLimited({ scope: 'regular', error: errorData });
+
+                 // Friendlier explanation for free users hitting the limit
+                const baseMsg = errorData?.error ||
+                    "You’ve hit your free prompt limit for today.";
+                const upgradeHint = errorData?.upgrade
+                    ? "\n\nUpgrade to Pro for higher or unlimited usage."
+                    : "";
+                alert("⏳ " + baseMsg + upgradeHint);
                 return;
             }
 

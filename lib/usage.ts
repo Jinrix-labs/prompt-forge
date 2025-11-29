@@ -74,7 +74,8 @@ export async function checkAndTrackUsage(
                 .gte('created_at', new Date(new Date().setHours(0, 0, 0, 0)).toISOString())
 
             const used = count || 0
-            const limit = 10
+            // Free users: daily limit for regular prompts
+            const limit = 20
             const allowed = used < limit
 
             if (allowed) {
@@ -195,7 +196,8 @@ export async function checkAndTrackUsage(
             .gte('created_at', new Date(new Date().setHours(0, 0, 0, 0)).toISOString())
 
         const used = count || 0
-        const limit = 10
+        // Free users: daily limit for regular prompts
+        const limit = 20
         const allowed = used < limit
 
         if (allowed) {
@@ -250,8 +252,12 @@ export async function checkAndTrackUsage(
             .eq('prompt_type', 'ugc')
             .gte('created_at', new Date(new Date().setHours(0, 0, 0, 0)).toISOString())
 
+            const used = count || 0
+            // Free users: daily limit for UGC prompts
+            const limit = 10
         const used = count || 0
-        const limit = 5
+        // Free users: daily limit for UGC prompts
+        const limit = 10
         const allowed = used < limit
 
         if (allowed) {
