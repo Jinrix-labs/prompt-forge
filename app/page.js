@@ -17,6 +17,7 @@ export default function PromptGenerator() {
     const [favorites, setFavorites] = useState([]);
     const [activeTab, setActiveTab] = useState('generate');
     const [creativeMode, setCreativeMode] = useState(false);
+    const [outputFormat, setOutputFormat] = useState('text'); // 'text' or 'json'
 
     // Playground specific state
     const [playgroundScene, setPlaygroundScene] = useState('');
@@ -166,7 +167,7 @@ export default function PromptGenerator() {
                 headers: {
                     "Content-Type": "application/json",
                 },
-                body: JSON.stringify({ userInput, contentType, platform, creativeMode })
+                body: JSON.stringify({ userInput, contentType, platform, creativeMode, outputFormat })
             });
 
             // Capture rate limit headers
@@ -226,14 +227,24 @@ export default function PromptGenerator() {
             }
 
             const data = await response.json();
-            setPrompts(data.prompts);
+            // Handle both text format (single prompt) and json format (multiple variations)
+            if (outputFormat === 'text' && data.prompt) {
+                // Text format returns a single prompt
+                setPrompts([{ title: 'Generated Prompt', prompt: data.prompt, negative: data.negative || '' }]);
+            } else if (data.prompts && Array.isArray(data.prompts)) {
+                // JSON format returns multiple variations
+                setPrompts(data.prompts);
+            } else {
+                console.error('Unexpected response format:', data);
+                alert('Unexpected response format from server');
+            }
         } catch (error) {
             console.error("Error generating prompts:", error);
             alert("Failed to generate prompts. Please try again.");
         } finally {
             setLoading(false);
         }
-    }, [userInput, contentType, platform, creativeMode]);
+    }, [userInput, contentType, platform, creativeMode, outputFormat]);
 
     const handleImageUpload = useCallback((e) => {
         const file = e.target.files[0];
@@ -1485,6 +1496,35 @@ export default function PromptGenerator() {
                                         className="w-full px-4 py-4 bg-black border-2 border-gray-800 text-white placeholder-gray-600 focus:border-cyan-500 focus:outline-none resize-none font-mono"
                                         rows={3}
                                     />
+                                </div>
+
+                                {/* Output Format Toggle */}
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-500 mb-2 tracking-wider">OUTPUT FORMAT</label>
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={() => setOutputFormat('text')}
+                                            className={`flex-1 py-3 border-2 transition-all font-bold text-sm ${
+                                                outputFormat === 'text'
+                                                    ? 'border-cyan-500 bg-cyan-500/20 text-cyan-500'
+                                                    : 'border-gray-700 text-gray-500 hover:border-gray-600'
+                                            }`}
+                                        >
+                                            Single Prompt
+                                            <div className="text-xs mt-1 opacity-75">Fast & Reliable</div>
+                                        </button>
+                                        <button
+                                            onClick={() => setOutputFormat('json')}
+                                            className={`flex-1 py-3 border-2 transition-all font-bold text-sm ${
+                                                outputFormat === 'json'
+                                                    ? 'border-fuchsia-500 bg-fuchsia-500/20 text-fuchsia-500'
+                                                    : 'border-gray-700 text-gray-500 hover:border-gray-600'
+                                            }`}
+                                        >
+                                            Multiple Variations
+                                            <div className="text-xs mt-1 opacity-75">JSON Format</div>
+                                        </button>
+                                    </div>
                                 </div>
 
                                 {/* Generate Button */}

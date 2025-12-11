@@ -18,7 +18,7 @@ export async function POST(request) {
             );
         }
 
-        const { userInput, contentType, platform, creativeMode = false } = await request.json();
+        const { userInput, contentType, platform, creativeMode = false, outputFormat = 'text' } = await request.json();
 
         if (!userInput || !contentType || !platform) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -75,8 +75,50 @@ export async function POST(request) {
 - Focus on artistic vision and creative concepts
 - Still maintain general appropriateness`;
 
+        // Different system prompts based on output format
+        let systemPrompt;
 
-        const systemPrompt = `You are an expert prompt engineer. Generate 4 optimized prompts for ${contentType} generation on ${platform}.
+        if (outputFormat === 'text') {
+            // Single optimized prompt (fast, reliable)
+            systemPrompt = `You are an expert prompt engineer. Generate ONE optimized prompt for ${contentType} generation on ${platform}.
+
+${safetyGuidelines}
+
+Requirements:
+- Make the prompt DETAILED but not flowery (75-100 words is perfect)
+- Paint a complete picture with specific visual details
+- DO NOT use quotation marks for emphasis within prompt text (they break JSON parsing)
+- Instead of "synthwave" style, use: synthwave style
+- Instead of "magical girl" costume, use: magical girl costume
+- Include rich descriptive terms: colors, lighting, atmosphere, composition
+- ALWAYS include technical/quality terms at the end: "detailed illustration, vibrant colors, cinematic lighting, 8k, highly detailed"
+- Structure: [detailed subject with action], [environment details], [lighting/atmosphere], [art style], [quality tags]
+- For images: include comprehensive negative prompts (what to avoid)
+- For videos: include camera movements and scene progression
+- The prompt should feel complete and vivid
+- Balance technical precision with creative description
+- NO generic phrases like "person" - be specific about appearance, clothing, pose
+
+CRITICAL: For IMAGE content type, you MUST include a "negative" field with comprehensive negative prompts. For VIDEO content type, use empty string for negative field.
+
+CRITICAL OUTPUT RULES:
+Your response must be ONLY a single valid JSON object.
+DO NOT use markdown code blocks.
+DO NOT use backticks.
+DO NOT add any text before or after the JSON.
+DO NOT use quotation marks for emphasis within prompt strings (they break JSON).
+Just the raw JSON starting with { and ending with }.
+
+Respond ONLY with valid JSON in this exact format:
+{
+  "prompt": "The enhanced prompt here with (emphasis) and details",
+  "negative": "negative prompt here (only for images, empty string for videos)"
+}
+
+DO NOT include any text outside the JSON. DO NOT use markdown code blocks.`;
+        } else {
+            // Multiple variations (JSON format)
+            systemPrompt = `You are an expert prompt engineer. Generate 4 optimized prompts for ${contentType} generation on ${platform}.
 
 ${safetyGuidelines}
 
@@ -129,7 +171,9 @@ Respond ONLY with valid JSON in this exact format:
 }
 
 DO NOT include any text outside the JSON. DO NOT use markdown code blocks.`;
+        }
 
+        // Make the API call after systemPrompt is determined
         let response;
 
         if (useClaude) {
@@ -287,10 +331,10 @@ DO NOT include any text outside the JSON. DO NOT use markdown code blocks.`;
                 } catch (e) {
                     // If that fails, try to fix common issues
                     let cleaned = text;
-                    
+
                     // Remove markdown code blocks if present
                     cleaned = cleaned.replace(/```json\n?/gi, '').replace(/```\n?/g, '').replace(/`/g, '').trim();
-                    
+
                     // Find JSON object
                     const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
                     if (!jsonMatch) {
@@ -304,13 +348,13 @@ DO NOT include any text outside the JSON. DO NOT use markdown code blocks.`;
                     } else {
                         cleaned = jsonMatch[0];
                     }
-                    
+
                     // Fix escaped quotes within strings (the main issue)
                     // Remove escaped quotes from emphasis: \"word\" becomes word
                     cleaned = cleaned.replace(/\\"([^"]*?)\\"/g, (match, p1) => {
                         return p1;
                     });
-                    
+
                     // Try parsing again
                     try {
                         return JSON.parse(cleaned);
@@ -342,29 +386,54 @@ DO NOT include any text outside the JSON. DO NOT use markdown code blocks.`;
 
             console.log('Claude parsed response:', JSON.stringify(claudeParsed, null, 2));
 
-            // Validate the parsed response
-            if (!claudeParsed.prompts || !Array.isArray(claudeParsed.prompts)) {
-                console.error('Invalid prompts structure from Claude:', claudeParsed);
+            // Handle different response formats
+            if (outputFormat === 'text') {
+                // Text format: single prompt
+                if (!claudeParsed.prompt || typeof claudeParsed.prompt !== 'string') {
+                    console.error('Invalid prompt structure from Claude (text format):', claudeParsed);
+                    const res = NextResponse.json({
+                        error: 'Invalid prompt structure from Claude',
+                        debug: {
+                            parsedResponse: claudeParsed
+                        }
+                    }, { status: 502 });
+                    res.headers.set('X-RateLimit-Limit', String(usage.limit));
+                    res.headers.set('X-RateLimit-Remaining', String(usage.remaining));
+                    res.headers.set('X-RateLimit-Used', String(usage.used));
+                    return res;
+                }
                 const res = NextResponse.json({
-                    error: 'Invalid prompts structure from Claude',
-                    debug: {
-                        parsedResponse: claudeParsed
-                    }
-                }, { status: 502 });
+                    prompt: claudeParsed.prompt,
+                    negative: claudeParsed.negative || ''
+                });
+                res.headers.set('X-RateLimit-Limit', String(usage.limit));
+                res.headers.set('X-RateLimit-Remaining', String(usage.remaining));
+                res.headers.set('X-RateLimit-Used', String(usage.used));
+                return res;
+            } else {
+                // JSON format: multiple variations
+                if (!claudeParsed.prompts || !Array.isArray(claudeParsed.prompts)) {
+                    console.error('Invalid prompts structure from Claude:', claudeParsed);
+                    const res = NextResponse.json({
+                        error: 'Invalid prompts structure from Claude',
+                        debug: {
+                            parsedResponse: claudeParsed
+                        }
+                    }, { status: 502 });
+                    res.headers.set('X-RateLimit-Limit', String(usage.limit));
+                    res.headers.set('X-RateLimit-Remaining', String(usage.remaining));
+                    res.headers.set('X-RateLimit-Used', String(usage.used));
+                    return res;
+                }
+                const res = NextResponse.json({ prompts: claudeParsed.prompts });
                 res.headers.set('X-RateLimit-Limit', String(usage.limit));
                 res.headers.set('X-RateLimit-Remaining', String(usage.remaining));
                 res.headers.set('X-RateLimit-Used', String(usage.used));
                 return res;
             }
-
-            const res = NextResponse.json({ prompts: claudeParsed.prompts });
-            res.headers.set('X-RateLimit-Limit', String(usage.limit));
-            res.headers.set('X-RateLimit-Remaining', String(usage.remaining));
-            res.headers.set('X-RateLimit-Used', String(usage.used));
-            return res;
         }
 
-        // For Groq path, keep original parsing
+        // For Groq path, handle both formats
         let groqParsed;
         try {
             groqParsed = JSON.parse(responseText);
@@ -383,6 +452,29 @@ DO NOT include any text outside the JSON. DO NOT use markdown code blocks.`;
         }
 
         console.log('Groq parsed response:', JSON.stringify(groqParsed, null, 2));
+
+        // Handle different response formats
+        if (outputFormat === 'text') {
+            // Text format: single prompt
+            if (!groqParsed.prompt || typeof groqParsed.prompt !== 'string') {
+                const res = NextResponse.json({ error: 'Invalid prompt structure from Groq' }, { status: 502 });
+                res.headers.set('X-RateLimit-Limit', String(usage.limit));
+                res.headers.set('X-RateLimit-Remaining', String(usage.remaining));
+                res.headers.set('X-RateLimit-Used', String(usage.used));
+                return res;
+            }
+
+            const res = NextResponse.json({
+                prompt: groqParsed.prompt,
+                negative: groqParsed.negative || '',
+            });
+            res.headers.set('X-RateLimit-Limit', String(usage.limit));
+            res.headers.set('X-RateLimit-Remaining', String(usage.remaining));
+            res.headers.set('X-RateLimit-Used', String(usage.used));
+            return res;
+        }
+
+        // JSON format: multiple variations
         const res = NextResponse.json({ prompts: groqParsed.prompts || [] });
         res.headers.set('X-RateLimit-Limit', String(usage.limit));
         res.headers.set('X-RateLimit-Remaining', String(usage.remaining));
