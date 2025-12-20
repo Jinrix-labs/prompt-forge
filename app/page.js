@@ -194,9 +194,9 @@ export default function PromptGenerator() {
                 const errorData = await response.json().catch(() => ({}));
                 setRateLimited({ scope: 'regular', error: errorData });
 
-                 // Friendlier explanation for free users hitting the limit
+                // Friendlier explanation for free users hitting the limit
                 const baseMsg = errorData?.error ||
-                    "You’ve hit your free prompt limit for today.";
+                    "You've hit your free prompt limit for today.";
                 const upgradeHint = errorData?.upgrade
                     ? "\n\nUpgrade to Pro for higher or unlimited usage."
                     : "";
@@ -227,13 +227,13 @@ export default function PromptGenerator() {
             }
 
             const data = await response.json();
-            // Handle both text format (single prompt) and json format (multiple variations)
-            if (outputFormat === 'text' && data.prompt) {
-                // Text format returns a single prompt
-                setPrompts([{ title: 'Generated Prompt', prompt: data.prompt, negative: data.negative || '' }]);
-            } else if (data.prompts && Array.isArray(data.prompts)) {
-                // JSON format returns multiple variations
+            // Handle response - both text and variations formats now return prompts array
+            if (data.prompts && Array.isArray(data.prompts)) {
+                // Both text and variations formats return prompts array
                 setPrompts(data.prompts);
+            } else if (data.prompt) {
+                // Fallback for old single prompt format (shouldn't happen with new backend)
+                setPrompts([{ title: 'Generated Prompt', prompt: data.prompt, negative: data.negative || '' }]);
             } else {
                 console.error('Unexpected response format:', data);
                 alert('Unexpected response format from server');
@@ -527,7 +527,7 @@ export default function PromptGenerator() {
         try {
             const proCheck = await fetch('/api/check-pro');
             const { isPro } = await proCheck.json();
-            
+
             if (!isPro) {
                 alert('Upgrade to Pro to save favorites!');
                 return;
@@ -537,7 +537,7 @@ export default function PromptGenerator() {
             alert('Unable to verify Pro status. Please try again.');
             return;
         }
-        
+
         const itemWithMeta = { ...item, platform, contentType, timestamp: Date.now() };
         const isFavorited = favorites.some(fav => fav.prompt === item.prompt && fav.title === item.title);
 
@@ -679,7 +679,7 @@ export default function PromptGenerator() {
         try {
             const proCheck = await fetch('/api/check-pro');
             const { isPro } = await proCheck.json();
-            
+
             if (!isPro) {
                 alert('Upgrade to Pro to save prompts!');
                 return;
@@ -689,7 +689,7 @@ export default function PromptGenerator() {
             alert('Unable to verify Pro status. Please try again.');
             return;
         }
-        
+
         const stored = JSON.parse(localStorage.getItem('zunno_prompts') || '[]');
         const newPrompt = {
             id: Date.now(),
@@ -804,587 +804,587 @@ export default function PromptGenerator() {
                 {activeTab === 'ugc' && (
                     <ProGate feature="UGC Generator">
                         <>
-                        <div className="mb-6 p-4 border-2 border-yellow-500/30 bg-yellow-500/10">
-                            <div className="flex items-start gap-3">
-                                <Sparkles className="w-5 h-5 text-yellow-500 mt-0.5 flex-shrink-0" />
-                                <div>
-                                    <h3 className="font-bold text-yellow-500 mb-1">PREMIUM UGC VIDEO PROMPTS</h3>
-                                    <p className="text-sm text-gray-300">Generate professional Sora 2 prompts with timeline breakdowns, shot composition, and UGC authenticity. Perfect for brands creating TikTok/Reels content.</p>
+                            <div className="mb-6 p-4 border-2 border-yellow-500/30 bg-yellow-500/10">
+                                <div className="flex items-start gap-3">
+                                    <Sparkles className="w-5 h-5 text-yellow-500 mt-0.5 flex-shrink-0" />
+                                    <div>
+                                        <h3 className="font-bold text-yellow-500 mb-1">PREMIUM UGC VIDEO PROMPTS</h3>
+                                        <p className="text-sm text-gray-300">Generate professional Sora 2 prompts with timeline breakdowns, shot composition, and UGC authenticity. Perfect for brands creating TikTok/Reels content.</p>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
 
-                        <div className="mb-8 border-2 border-gray-800 bg-gray-900/50 backdrop-blur">
-                            <div className="p-6 space-y-6">
-                                {/* Product Info */}
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-xs font-bold text-gray-500 mb-2 tracking-wider">PRODUCT/BRAND NAME*</label>
-                                        <input
-                                            type="text"
-                                            value={ugcBrand}
-                                            onChange={(e) => setUgcBrand(e.target.value)}
-                                            placeholder="e.g., GlowUp Serum, ProBar, TechFlow App"
-                                            className="w-full px-4 py-3 bg-black border-2 border-gray-800 text-white placeholder-gray-600 focus:border-cyan-500 focus:outline-none"
-                                        />
+                            <div className="mb-8 border-2 border-gray-800 bg-gray-900/50 backdrop-blur">
+                                <div className="p-6 space-y-6">
+                                    {/* Product Info */}
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-xs font-bold text-gray-500 mb-2 tracking-wider">PRODUCT/BRAND NAME*</label>
+                                            <input
+                                                type="text"
+                                                value={ugcBrand}
+                                                onChange={(e) => setUgcBrand(e.target.value)}
+                                                placeholder="e.g., GlowUp Serum, ProBar, TechFlow App"
+                                                className="w-full px-4 py-3 bg-black border-2 border-gray-800 text-white placeholder-gray-600 focus:border-cyan-500 focus:outline-none"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-bold text-gray-500 mb-2 tracking-wider">PRODUCT CATEGORY</label>
+                                            <select
+                                                value={ugcCategory}
+                                                onChange={(e) => setUgcCategory(e.target.value)}
+                                                className="w-full px-4 py-3 bg-black border-2 border-gray-800 text-white focus:border-cyan-500 focus:outline-none"
+                                            >
+                                                {productCategories.map(cat => (
+                                                    <option key={cat.value} value={cat.value}>{cat.label}</option>
+                                                ))}
+                                            </select>
+                                        </div>
                                     </div>
+
+                                    {/* Creator & Platform */}
+                                    <div className="grid grid-cols-3 gap-4">
+                                        <div>
+                                            <label className="block text-xs font-bold text-gray-500 mb-2 tracking-wider">CREATOR DEMO</label>
+                                            <select
+                                                value={ugcCreator}
+                                                onChange={(e) => setUgcCreator(e.target.value)}
+                                                className="w-full px-4 py-3 bg-black border-2 border-gray-800 text-white focus:border-cyan-500 focus:outline-none"
+                                            >
+                                                {creatorDemos.map(demo => (
+                                                    <option key={demo.value} value={demo.value}>{demo.label}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-bold text-gray-500 mb-2 tracking-wider">VIDEO LENGTH</label>
+                                            <select
+                                                value={ugcLength}
+                                                onChange={(e) => setUgcLength(e.target.value)}
+                                                className="w-full px-4 py-3 bg-black border-2 border-gray-800 text-white focus:border-cyan-500 focus:outline-none"
+                                            >
+                                                <option value="10">10 seconds</option>
+                                                <option value="15">15 seconds</option>
+                                                <option value="30">30 seconds</option>
+                                                <option value="60">60 seconds</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-bold text-gray-500 mb-2 tracking-wider">PLATFORM</label>
+                                            <select
+                                                value={ugcPlatform}
+                                                onChange={(e) => setUgcPlatform(e.target.value)}
+                                                className="w-full px-4 py-3 bg-black border-2 border-gray-800 text-white focus:border-cyan-500 focus:outline-none"
+                                            >
+                                                <option value="tiktok">TikTok</option>
+                                                <option value="reels">Instagram Reels</option>
+                                                <option value="shorts">YouTube Shorts</option>
+                                                <option value="sora2">Sora 2</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    {/* Enhanced UGC Fields */}
+                                    <div className="space-y-4">
+                                        {/* Hero Message */}
+                                        <div>
+                                            <label className="block text-xs font-bold text-gray-500 mb-2 tracking-wider">HERO MESSAGE (What&apos;s the main benefit?)</label>
+                                            <input
+                                                type="text"
+                                                value={ugcHeroMessage}
+                                                onChange={(e) => setUgcHeroMessage(e.target.value)}
+                                                placeholder="Hydrates all day without feeling greasy"
+                                                className="w-full px-4 py-3 bg-black border-2 border-gray-800 text-white placeholder-gray-600 focus:border-cyan-500 focus:outline-none"
+                                            />
+                                            <div className="flex items-center justify-between mt-1">
+                                                <p className="text-xs text-gray-400">
+                                                    Ex: &quot;Lasts 12 hours&quot;, &quot;Eco-friendly&quot;, &quot;100% natural&quot;, etc.
+                                                </p>
+                                                <button
+                                                    onClick={() => suggestContent('hero')}
+                                                    disabled={suggesting}
+                                                    className="text-xs text-cyan-400 underline hover:text-cyan-300 disabled:opacity-50"
+                                                >
+                                                    {suggesting ? "..." : "Need ideas? Tap to auto-fill!"}
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        {/* Call-to-Action */}
+                                        <div>
+                                            <label className="block text-xs font-bold text-gray-500 mb-2 tracking-wider">CALL TO ACTION (What should the viewer do?)</label>
+                                            <input
+                                                type="text"
+                                                value={ugcCTA}
+                                                onChange={(e) => setUgcCTA(e.target.value)}
+                                                placeholder="Shop now – link in bio!"
+                                                className="w-full px-4 py-3 bg-black border-2 border-gray-800 text-white placeholder-gray-600 focus:border-cyan-500 focus:outline-none"
+                                            />
+                                            <div className="flex items-center justify-between mt-1">
+                                                <p className="text-xs text-gray-400">
+                                                    Ex: &quot;Try for free&quot;, &quot;Limited time offer&quot;, &quot;Get yours today!&quot;
+                                                </p>
+                                                <button
+                                                    onClick={() => suggestContent('cta')}
+                                                    disabled={suggesting}
+                                                    className="text-xs text-cyan-400 underline hover:text-cyan-300 disabled:opacity-50"
+                                                >
+                                                    {suggesting ? "..." : "Need ideas? Tap to auto-fill!"}
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        {/* Legacy Key Message (Optional) */}
+                                        <div>
+                                            <label className="block text-xs font-bold text-gray-500 mb-2 tracking-wider">ADDITIONAL MESSAGE (OPTIONAL)</label>
+                                            <input
+                                                type="text"
+                                                value={ugcMessage}
+                                                onChange={(e) => setUgcMessage(e.target.value)}
+                                                placeholder="e.g., Shows transformation, Emphasizes natural ingredients"
+                                                className="w-full px-4 py-3 bg-black border-2 border-gray-800 text-white placeholder-gray-600 focus:border-cyan-500 focus:outline-none"
+                                            />
+                                        </div>
+
+                                        {/* Tone/Vibe */}
+                                        <div>
+                                            <label className="block text-xs font-bold text-gray-500 mb-2 tracking-wider">TONE & VIBE</label>
+                                            <select
+                                                value={ugcTone}
+                                                onChange={(e) => setUgcTone(e.target.value)}
+                                                className="w-full px-4 py-3 bg-black border-2 border-gray-800 text-white focus:border-cyan-500 focus:outline-none"
+                                            >
+                                                <option value="friendly">Friendly & Bubbly</option>
+                                                <option value="professional">Professional & Trustworthy</option>
+                                                <option value="energetic">Energetic & Exciting</option>
+                                                <option value="calm">Calm & Relaxing</option>
+                                                <option value="dramatic">Dramatic & Intense</option>
+                                                <option value="playful">Playful & Fun</option>
+                                                <option value="authentic">Authentic & Genuine</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    {/* Product Image Upload */}
                                     <div>
-                                        <label className="block text-xs font-bold text-gray-500 mb-2 tracking-wider">PRODUCT CATEGORY</label>
-                                        <select
-                                            value={ugcCategory}
-                                            onChange={(e) => setUgcCategory(e.target.value)}
-                                            className="w-full px-4 py-3 bg-black border-2 border-gray-800 text-white focus:border-cyan-500 focus:outline-none"
+                                        <label className="block text-xs font-bold text-gray-500 mb-2 tracking-wider">
+                                            PRODUCT IMAGE (OPTIONAL)
+                                        </label>
+                                        {!imagePreview ? (
+                                            <div className="border-2 border-dashed border-gray-700 hover:border-yellow-500 transition-colors">
+                                                <label className="block p-8 text-center cursor-pointer">
+                                                    <div className="flex flex-col items-center gap-2">
+                                                        <div className="w-12 h-12 rounded-full bg-yellow-500/20 flex items-center justify-center">
+                                                            <ImageIcon className="w-6 h-6 text-yellow-500" />
+                                                        </div>
+                                                        <div className="text-sm text-gray-400">
+                                                            <span className="text-yellow-500 font-bold">Click to upload</span> product photo
+                                                        </div>
+                                                        <div className="text-xs text-gray-600">
+                                                            AI will analyze your product for better prompts (JPG, PNG, max 5MB)
+                                                        </div>
+                                                    </div>
+                                                    <input
+                                                        type="file"
+                                                        accept="image/jpeg,image/png,image/webp"
+                                                        onChange={handleImageUpload}
+                                                        className="hidden"
+                                                    />
+                                                </label>
+                                            </div>
+                                        ) : (
+                                            <div className="relative border-2 border-yellow-500 bg-black p-4">
+                                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                                <img
+                                                    src={imagePreview}
+                                                    alt="Product preview"
+                                                    className="max-h-48 mx-auto"
+                                                />
+                                                <button
+                                                    onClick={removeImage}
+                                                    className="absolute top-2 right-2 p-2 bg-red-500 text-white hover:bg-red-600 transition-colors"
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
+                                                <div className="mt-2 text-xs text-center text-yellow-500">
+                                                    ✓ Image uploaded - AI will analyze this product
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Advanced Fields Toggle */}
+                                    <div className="flex justify-center">
+                                        <button
+                                            type="button"
+                                            className="text-sm text-purple-400 hover:text-purple-300 hover:underline transition-colors"
+                                            onClick={() => setShowAdvanced(!showAdvanced)}
                                         >
-                                            {productCategories.map(cat => (
-                                                <option key={cat.value} value={cat.value}>{cat.label}</option>
-                                            ))}
-                                        </select>
+                                            {showAdvanced ? "Hide Advanced Fields" : "Show Advanced Fields (Pro)"}
+                                        </button>
+                                    </div>
+
+                                    {/* Advanced Fields Section */}
+                                    {showAdvanced && (
+                                        <ProGate feature="advanced UGC prompt customization">
+                                            {/* Advanced Fields Content */}
+                                            <div className="mt-4 grid gap-4 border-t border-gray-700 pt-4">
+                                                <div>
+                                                    <label className="block text-xs font-bold text-gray-500 mb-2 tracking-wider">PROMPT ADHERENCE (1-10)</label>
+                                                    <input
+                                                        type="number"
+                                                        min="1"
+                                                        max="10"
+                                                        value={promptAdherence}
+                                                        onChange={(e) => setPromptAdherence(e.target.value)}
+                                                        placeholder="1-10"
+                                                        className="w-full px-4 py-3 bg-black border-2 border-gray-800 text-white placeholder-gray-600 focus:border-purple-500 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    />
+                                                    <p className="text-sm text-gray-500 italic mt-1">
+                                                        🎯 Higher numbers = stricter adherence to your style choices (10 = exact match, 1 = loose inspiration)
+                                                    </p>
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs font-bold text-gray-500 mb-2 tracking-wider">PROMPT STYLE</label>
+                                                    <select
+                                                        value={promptStyle}
+                                                        onChange={(e) => setPromptStyle(e.target.value)}
+                                                        className="w-full px-4 py-3 bg-black border-2 border-gray-800 text-white focus:border-purple-500 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    >
+                                                        <option value="">Select style...</option>
+                                                        <option value="cinematic">Cinematic</option>
+                                                        <option value="studio">Studio</option>
+                                                        <option value="selfie">Selfie</option>
+                                                        <option value="before-after">Before/After</option>
+                                                    </select>
+                                                    <p className="text-sm text-gray-500 italic mt-1">
+                                                        🎯 Use Prompt Style to shape how your video feels — &quot;Cinematic&quot; = smooth panning, &quot;Selfie&quot; = raw + authentic
+                                                    </p>
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs font-bold text-gray-500 mb-2 tracking-wider">SCENE INTENT</label>
+                                                    <input
+                                                        type="text"
+                                                        value={sceneIntent}
+                                                        onChange={(e) => setSceneIntent(e.target.value)}
+                                                        placeholder="e.g., Transformation, Lifestyle Demo, Reaction"
+                                                        disabled={!user.isPro}
+                                                        className="w-full px-4 py-3 bg-black border-2 border-gray-800 text-white placeholder-gray-600 focus:border-purple-500 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    />
+                                                    <p className="text-sm text-gray-500 italic mt-1">
+                                                        💡 What&apos;s the main goal? &quot;Transformation&quot; = before/after shots, &quot;Reaction&quot; = genuine surprise moments
+                                                    </p>
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs font-bold text-gray-500 mb-2 tracking-wider">NARRATION STYLE</label>
+                                                    <textarea
+                                                        value={narrationStyle}
+                                                        onChange={(e) => setNarrationStyle(e.target.value)}
+                                                        placeholder="Casual, Witty, Dramatic"
+                                                        rows="2"
+                                                        disabled={!user.isPro}
+                                                        className="w-full px-4 py-3 bg-black border-2 border-gray-800 text-white placeholder-gray-600 focus:border-purple-500 focus:outline-none resize-none disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    />
+                                                    <p className="text-sm text-gray-500 italic mt-1">
+                                                        🗣️ Match your brand voice — &quot;Witty&quot; = clever one-liners, &quot;Dramatic&quot; = emotional storytelling
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </ProGate>
+                                    )}
+
+                                    {/* Safety Notice */}
+                                    <div className="bg-yellow-500/10 border border-yellow-500/30 p-3 rounded">
+                                        <div className="flex items-start gap-2">
+                                            <div className="text-yellow-500 text-sm">⚠️</div>
+                                            <div className="text-xs text-yellow-300">
+                                                <strong>Safety Notice:</strong> Generated content avoids celebrity names and public figures to prevent platform violations. All content focuses on authentic everyday people.
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Generate Buttons */}
+                                    <div className="flex gap-3">
+                                        <button
+                                            onClick={generateUGCWithAI}
+                                            disabled={!ugcBrand.trim() || ugcAILoading}
+                                            className="flex-1 py-4 bg-gradient-to-r from-purple-500 via-pink-500 to-rose-500 text-white font-black text-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
+                                        >
+                                            {ugcAILoading ? (
+                                                <>
+                                                    <Loader2 className="w-6 h-6 animate-spin" />
+                                                    AI GENERATING...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Sparkles className="w-6 h-6" />
+                                                    AI SCRIPT & TIMELINE
+                                                </>
+                                            )}
+                                        </button>
+                                        <button
+                                            onClick={generateUGCPrompts}
+                                            disabled={!ugcBrand.trim() || loading}
+                                            className="flex-1 py-4 bg-gradient-to-r from-yellow-500 via-orange-500 to-red-500 text-black font-black text-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
+                                        >
+                                            {loading ? (
+                                                <>
+                                                    <Loader2 className="w-6 h-6 animate-spin" />
+                                                    GENERATING...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Film className="w-6 h-6" />
+                                                    SORA PROMPTS
+                                                </>
+                                            )}
+                                        </button>
                                     </div>
                                 </div>
+                            </div>
 
-                                {/* Creator & Platform */}
-                                <div className="grid grid-cols-3 gap-4">
-                                    <div>
-                                        <label className="block text-xs font-bold text-gray-500 mb-2 tracking-wider">CREATOR DEMO</label>
-                                        <select
-                                            value={ugcCreator}
-                                            onChange={(e) => setUgcCreator(e.target.value)}
-                                            className="w-full px-4 py-3 bg-black border-2 border-gray-800 text-white focus:border-cyan-500 focus:outline-none"
-                                        >
-                                            {creatorDemos.map(demo => (
-                                                <option key={demo.value} value={demo.value}>{demo.label}</option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs font-bold text-gray-500 mb-2 tracking-wider">VIDEO LENGTH</label>
-                                        <select
-                                            value={ugcLength}
-                                            onChange={(e) => setUgcLength(e.target.value)}
-                                            className="w-full px-4 py-3 bg-black border-2 border-gray-800 text-white focus:border-cyan-500 focus:outline-none"
-                                        >
-                                            <option value="10">10 seconds</option>
-                                            <option value="15">15 seconds</option>
-                                            <option value="30">30 seconds</option>
-                                            <option value="60">60 seconds</option>
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs font-bold text-gray-500 mb-2 tracking-wider">PLATFORM</label>
-                                        <select
-                                            value={ugcPlatform}
-                                            onChange={(e) => setUgcPlatform(e.target.value)}
-                                            className="w-full px-4 py-3 bg-black border-2 border-gray-800 text-white focus:border-cyan-500 focus:outline-none"
-                                        >
-                                            <option value="tiktok">TikTok</option>
-                                            <option value="reels">Instagram Reels</option>
-                                            <option value="shorts">YouTube Shorts</option>
-                                            <option value="sora2">Sora 2</option>
-                                        </select>
-                                    </div>
-                                </div>
-
-                                {/* Enhanced UGC Fields */}
+                            {/* UGC Results */}
+                            {ugcPrompts.length > 0 && (
                                 <div className="space-y-4">
-                                    {/* Hero Message */}
-                                    <div>
-                                        <label className="block text-xs font-bold text-gray-500 mb-2 tracking-wider">HERO MESSAGE (What&apos;s the main benefit?)</label>
-                                        <input
-                                            type="text"
-                                            value={ugcHeroMessage}
-                                            onChange={(e) => setUgcHeroMessage(e.target.value)}
-                                            placeholder="Hydrates all day without feeling greasy"
-                                            className="w-full px-4 py-3 bg-black border-2 border-gray-800 text-white placeholder-gray-600 focus:border-cyan-500 focus:outline-none"
-                                        />
-                                        <div className="flex items-center justify-between mt-1">
-                                            <p className="text-xs text-gray-400">
-                                                Ex: &quot;Lasts 12 hours&quot;, &quot;Eco-friendly&quot;, &quot;100% natural&quot;, etc.
-                                            </p>
-                                            <button
-                                                onClick={() => suggestContent('hero')}
-                                                disabled={suggesting}
-                                                className="text-xs text-cyan-400 underline hover:text-cyan-300 disabled:opacity-50"
-                                            >
-                                                {suggesting ? "..." : "Need ideas? Tap to auto-fill!"}
-                                            </button>
+                                    {ugcPrompts.map((item, index) => (
+                                        <div key={index} className="border-2 border-yellow-500/30 bg-gray-900/50 backdrop-blur">
+                                            <div className="p-6">
+                                                <div className="flex items-start justify-between mb-4">
+                                                    <h3 className="text-xl font-bold text-yellow-500">{item.title}</h3>
+                                                    <button
+                                                        onClick={() => copyToClipboard(item.prompt, `ugc-${index}`)}
+                                                        className="px-4 py-2 border-2 border-yellow-500 bg-yellow-500/20 text-yellow-500 hover:bg-yellow-500 hover:text-black font-bold transition-all flex items-center gap-2"
+                                                    >
+                                                        {copiedIndex === `ugc-${index}` ? (
+                                                            <>
+                                                                <Check className="w-4 h-4" />
+                                                                COPIED
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <Copy className="w-4 h-4" />
+                                                                COPY
+                                                            </>
+                                                        )}
+                                                    </button>
+                                                </div>
+
+                                                <div className="text-xs font-bold text-yellow-500 mb-2 tracking-wider">↳ FULL SORA 2 PROMPT</div>
+                                                <p className="text-gray-300 bg-black/50 p-4 border border-gray-800 font-mono text-sm leading-relaxed whitespace-pre-line mb-4">
+                                                    {item.prompt}
+                                                </p>
+
+                                                {item.timeline && (
+                                                    <>
+                                                        <div className="text-xs font-bold text-cyan-500 mb-2 tracking-wider">↳ TIMELINE BREAKDOWN</div>
+                                                        <div className="bg-black/50 p-4 border border-gray-800 space-y-2">
+                                                            {item.timeline.map((segment, i) => (
+                                                                <div key={i} className="text-sm">
+                                                                    <span className="text-cyan-500 font-mono font-bold">{segment.time}</span>
+                                                                    <span className="text-gray-400"> → </span>
+                                                                    <span className="text-gray-300">{segment.description}</span>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </>
+                                                )}
+                                            </div>
                                         </div>
-                                    </div>
-
-                                    {/* Call-to-Action */}
-                                    <div>
-                                        <label className="block text-xs font-bold text-gray-500 mb-2 tracking-wider">CALL TO ACTION (What should the viewer do?)</label>
-                                        <input
-                                            type="text"
-                                            value={ugcCTA}
-                                            onChange={(e) => setUgcCTA(e.target.value)}
-                                            placeholder="Shop now – link in bio!"
-                                            className="w-full px-4 py-3 bg-black border-2 border-gray-800 text-white placeholder-gray-600 focus:border-cyan-500 focus:outline-none"
-                                        />
-                                        <div className="flex items-center justify-between mt-1">
-                                            <p className="text-xs text-gray-400">
-                                                Ex: &quot;Try for free&quot;, &quot;Limited time offer&quot;, &quot;Get yours today!&quot;
-                                            </p>
-                                            <button
-                                                onClick={() => suggestContent('cta')}
-                                                disabled={suggesting}
-                                                className="text-xs text-cyan-400 underline hover:text-cyan-300 disabled:opacity-50"
-                                            >
-                                                {suggesting ? "..." : "Need ideas? Tap to auto-fill!"}
-                                            </button>
-                                        </div>
-                                    </div>
-
-                                    {/* Legacy Key Message (Optional) */}
-                                    <div>
-                                        <label className="block text-xs font-bold text-gray-500 mb-2 tracking-wider">ADDITIONAL MESSAGE (OPTIONAL)</label>
-                                        <input
-                                            type="text"
-                                            value={ugcMessage}
-                                            onChange={(e) => setUgcMessage(e.target.value)}
-                                            placeholder="e.g., Shows transformation, Emphasizes natural ingredients"
-                                            className="w-full px-4 py-3 bg-black border-2 border-gray-800 text-white placeholder-gray-600 focus:border-cyan-500 focus:outline-none"
-                                        />
-                                    </div>
-
-                                    {/* Tone/Vibe */}
-                                    <div>
-                                        <label className="block text-xs font-bold text-gray-500 mb-2 tracking-wider">TONE & VIBE</label>
-                                        <select
-                                            value={ugcTone}
-                                            onChange={(e) => setUgcTone(e.target.value)}
-                                            className="w-full px-4 py-3 bg-black border-2 border-gray-800 text-white focus:border-cyan-500 focus:outline-none"
-                                        >
-                                            <option value="friendly">Friendly & Bubbly</option>
-                                            <option value="professional">Professional & Trustworthy</option>
-                                            <option value="energetic">Energetic & Exciting</option>
-                                            <option value="calm">Calm & Relaxing</option>
-                                            <option value="dramatic">Dramatic & Intense</option>
-                                            <option value="playful">Playful & Fun</option>
-                                            <option value="authentic">Authentic & Genuine</option>
-                                        </select>
-                                    </div>
+                                    ))}
                                 </div>
+                            )}
 
-                                {/* Product Image Upload */}
-                                <div>
-                                    <label className="block text-xs font-bold text-gray-500 mb-2 tracking-wider">
-                                        PRODUCT IMAGE (OPTIONAL)
-                                    </label>
-                                    {!imagePreview ? (
-                                        <div className="border-2 border-dashed border-gray-700 hover:border-yellow-500 transition-colors">
-                                            <label className="block p-8 text-center cursor-pointer">
-                                                <div className="flex flex-col items-center gap-2">
-                                                    <div className="w-12 h-12 rounded-full bg-yellow-500/20 flex items-center justify-center">
-                                                        <ImageIcon className="w-6 h-6 text-yellow-500" />
-                                                    </div>
-                                                    <div className="text-sm text-gray-400">
-                                                        <span className="text-yellow-500 font-bold">Click to upload</span> product photo
-                                                    </div>
-                                                    <div className="text-xs text-gray-600">
-                                                        AI will analyze your product for better prompts (JPG, PNG, max 5MB)
+                            {/* UGC AI Results */}
+                            {(ugcScript || ugcTimeline.length > 0 || ugcPromptIdeas) && (
+                                <div className="space-y-4">
+                                    {/* Copy All Button */}
+                                    <div className="flex justify-center mb-6">
+                                        <button
+                                            onClick={() => copyAllUGCResults()}
+                                            className="px-6 py-3 border-2 border-cyan-500 bg-cyan-500/20 text-cyan-500 hover:bg-cyan-500 hover:text-black font-bold transition-all flex items-center gap-2"
+                                        >
+                                            {copiedIndex === 'ugc-all' ? (
+                                                <>
+                                                    <Check className="w-5 h-5" />
+                                                    ALL COPIED
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Copy className="w-5 h-5" />
+                                                    COPY ALL UGC RESULTS
+                                                </>
+                                            )}
+                                        </button>
+                                    </div>
+                                    {/* Script */}
+                                    {ugcScript && (
+                                        <div className="border-2 border-purple-500/30 bg-gray-900/50 backdrop-blur">
+                                            <div className="p-6">
+                                                <div className="flex items-start justify-between mb-4">
+                                                    <h3 className="text-xl font-bold text-purple-500">🎬 AI-Generated Script</h3>
+                                                    <div className="flex gap-2">
+                                                        <button
+                                                            onClick={() => savePrompt(ugcScript, ugcPlatform, 'ugc-script')}
+                                                            className="px-4 py-2 border-2 border-fuchsia-500 bg-fuchsia-500/20 text-fuchsia-500 hover:bg-fuchsia-500 hover:text-black font-bold transition-all flex items-center gap-2"
+                                                        >
+                                                            {savedPromptId ? (
+                                                                <>
+                                                                    <Check className="w-4 h-4" />
+                                                                    SAVED
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <Star className="w-4 h-4" />
+                                                                    SAVE
+                                                                </>
+                                                            )}
+                                                        </button>
+                                                        <button
+                                                            onClick={() => copyToClipboard(ugcScript, 'ugc-script')}
+                                                            className="px-4 py-2 border-2 border-purple-500 bg-purple-500/20 text-purple-500 hover:bg-purple-500 hover:text-black font-bold transition-all flex items-center gap-2"
+                                                        >
+                                                            {copiedIndex === 'ugc-script' ? (
+                                                                <>
+                                                                    <Check className="w-4 h-4" />
+                                                                    COPIED
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <Copy className="w-4 h-4" />
+                                                                    COPY
+                                                                </>
+                                                            )}
+                                                        </button>
                                                     </div>
                                                 </div>
-                                                <input
-                                                    type="file"
-                                                    accept="image/jpeg,image/png,image/webp"
-                                                    onChange={handleImageUpload}
-                                                    className="hidden"
-                                                />
-                                            </label>
+                                                <div className="text-xs font-bold text-purple-500 mb-2 tracking-wider">↳ FULL SCRIPT</div>
+                                                <div className="text-gray-300 bg-black/50 p-4 border border-gray-800 font-mono text-sm leading-relaxed whitespace-pre-line">
+                                                    {ugcScript}
+                                                </div>
+                                            </div>
                                         </div>
-                                    ) : (
-                                        <div className="relative border-2 border-yellow-500 bg-black p-4">
-                                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                                            <img
-                                                src={imagePreview}
-                                                alt="Product preview"
-                                                className="max-h-48 mx-auto"
-                                            />
-                                            <button
-                                                onClick={removeImage}
-                                                className="absolute top-2 right-2 p-2 bg-red-500 text-white hover:bg-red-600 transition-colors"
-                                            >
-                                                <Trash2 className="w-4 h-4" />
-                                            </button>
-                                            <div className="mt-2 text-xs text-center text-yellow-500">
-                                                ✓ Image uploaded - AI will analyze this product
+                                    )}
+
+                                    {/* Timeline */}
+                                    {ugcTimeline.length > 0 && (
+                                        <div className="border-2 border-cyan-500/30 bg-gray-900/50 backdrop-blur">
+                                            <div className="p-6">
+                                                <div className="flex items-start justify-between mb-4">
+                                                    <h3 className="text-xl font-bold text-cyan-500">⏱️ Timeline Breakdown</h3>
+                                                    <div className="flex gap-2">
+                                                        <button
+                                                            onClick={() => savePrompt(JSON.stringify(ugcTimeline, null, 2), ugcPlatform, 'ugc-timeline')}
+                                                            className="px-4 py-2 border-2 border-fuchsia-500 bg-fuchsia-500/20 text-fuchsia-500 hover:bg-fuchsia-500 hover:text-black font-bold transition-all flex items-center gap-2"
+                                                        >
+                                                            {savedPromptId ? (
+                                                                <>
+                                                                    <Check className="w-4 h-4" />
+                                                                    SAVED
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <Star className="w-4 h-4" />
+                                                                    SAVE
+                                                                </>
+                                                            )}
+                                                        </button>
+                                                        <button
+                                                            onClick={() => copyToClipboard(JSON.stringify(ugcTimeline, null, 2), 'ugc-timeline')}
+                                                            className="px-4 py-2 border-2 border-cyan-500 bg-cyan-500/20 text-cyan-500 hover:bg-cyan-500 hover:text-black font-bold transition-all flex items-center gap-2"
+                                                        >
+                                                            {copiedIndex === 'ugc-timeline' ? (
+                                                                <>
+                                                                    <Check className="w-4 h-4" />
+                                                                    COPIED
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <Copy className="w-4 h-4" />
+                                                                    COPY
+                                                                </>
+                                                            )}
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                                <div className="bg-black/50 p-4 border border-gray-800 space-y-3">
+                                                    {ugcTimeline.map((segment, i) => (
+                                                        <div key={i} className="flex items-start gap-3">
+                                                            <span className="text-cyan-500 font-mono font-bold text-sm min-w-[60px]">{segment.time}</span>
+                                                            <div className="flex-1">
+                                                                <div className="text-gray-300 text-sm font-medium">{segment.action}</div>
+                                                                <div className="text-gray-500 text-xs">📹 {segment.camera}</div>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Prompt Ideas */}
+                                    {ugcPromptIdeas && (
+                                        <div className="border-2 border-green-500/30 bg-gray-900/50 backdrop-blur">
+                                            <div className="p-6">
+                                                <div className="flex items-start justify-between mb-4">
+                                                    <h3 className="text-xl font-bold text-green-500">🎨 AI Prompt Ideas</h3>
+                                                    <div className="flex gap-2">
+                                                        <button
+                                                            onClick={() => savePrompt(JSON.stringify(ugcPromptIdeas, null, 2), ugcPlatform, 'ugc-prompts')}
+                                                            className="px-4 py-2 border-2 border-fuchsia-500 bg-fuchsia-500/20 text-fuchsia-500 hover:bg-fuchsia-500 hover:text-black font-bold transition-all flex items-center gap-2"
+                                                        >
+                                                            {savedPromptId ? (
+                                                                <>
+                                                                    <Check className="w-4 h-4" />
+                                                                    SAVED
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <Star className="w-4 h-4" />
+                                                                    SAVE
+                                                                </>
+                                                            )}
+                                                        </button>
+                                                        <button
+                                                            onClick={() => copyToClipboard(JSON.stringify(ugcPromptIdeas, null, 2), 'ugc-prompts')}
+                                                            className="px-4 py-2 border-2 border-green-500 bg-green-500/20 text-green-500 hover:bg-green-500 hover:text-black font-bold transition-all flex items-center gap-2"
+                                                        >
+                                                            {copiedIndex === 'ugc-prompts' ? (
+                                                                <>
+                                                                    <Check className="w-4 h-4" />
+                                                                    COPIED
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <Copy className="w-4 h-4" />
+                                                                    COPY
+                                                                </>
+                                                            )}
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                                <div className="space-y-4">
+                                                    {ugcPromptIdeas.image && (
+                                                        <div>
+                                                            <div className="text-xs font-bold text-green-500 mb-2 tracking-wider">↳ IMAGE PROMPT</div>
+                                                            <div className="text-gray-300 bg-black/50 p-4 border border-gray-800 font-mono text-sm leading-relaxed">
+                                                                {ugcPromptIdeas.image}
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                    {ugcPromptIdeas.video && (
+                                                        <div>
+                                                            <div className="text-xs font-bold text-green-500 mb-2 tracking-wider">↳ VIDEO PROMPT</div>
+                                                            <div className="text-gray-300 bg-black/50 p-4 border border-gray-800 font-mono text-sm leading-relaxed">
+                                                                {ugcPromptIdeas.video}
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
                                     )}
                                 </div>
-
-                                {/* Advanced Fields Toggle */}
-                                <div className="flex justify-center">
-                                    <button
-                                        type="button"
-                                        className="text-sm text-purple-400 hover:text-purple-300 hover:underline transition-colors"
-                                        onClick={() => setShowAdvanced(!showAdvanced)}
-                                    >
-                                        {showAdvanced ? "Hide Advanced Fields" : "Show Advanced Fields (Pro)"}
-                                    </button>
-                                </div>
-
-                                {/* Advanced Fields Section */}
-                                {showAdvanced && (
-                                    <ProGate feature="advanced UGC prompt customization">
-                                        {/* Advanced Fields Content */}
-                                        <div className="mt-4 grid gap-4 border-t border-gray-700 pt-4">
-                                            <div>
-                                                <label className="block text-xs font-bold text-gray-500 mb-2 tracking-wider">PROMPT ADHERENCE (1-10)</label>
-                                                <input
-                                                    type="number"
-                                                    min="1"
-                                                    max="10"
-                                                    value={promptAdherence}
-                                                    onChange={(e) => setPromptAdherence(e.target.value)}
-                                                    placeholder="1-10"
-                                                    className="w-full px-4 py-3 bg-black border-2 border-gray-800 text-white placeholder-gray-600 focus:border-purple-500 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
-                                                />
-                                                <p className="text-sm text-gray-500 italic mt-1">
-                                                    🎯 Higher numbers = stricter adherence to your style choices (10 = exact match, 1 = loose inspiration)
-                                                </p>
-                                            </div>
-                                            <div>
-                                                <label className="block text-xs font-bold text-gray-500 mb-2 tracking-wider">PROMPT STYLE</label>
-                                                <select
-                                                    value={promptStyle}
-                                                    onChange={(e) => setPromptStyle(e.target.value)}
-                                                    className="w-full px-4 py-3 bg-black border-2 border-gray-800 text-white focus:border-purple-500 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
-                                                >
-                                                    <option value="">Select style...</option>
-                                                    <option value="cinematic">Cinematic</option>
-                                                    <option value="studio">Studio</option>
-                                                    <option value="selfie">Selfie</option>
-                                                    <option value="before-after">Before/After</option>
-                                                </select>
-                                                <p className="text-sm text-gray-500 italic mt-1">
-                                                    🎯 Use Prompt Style to shape how your video feels — &quot;Cinematic&quot; = smooth panning, &quot;Selfie&quot; = raw + authentic
-                                                </p>
-                                            </div>
-                                            <div>
-                                                <label className="block text-xs font-bold text-gray-500 mb-2 tracking-wider">SCENE INTENT</label>
-                                                <input
-                                                    type="text"
-                                                    value={sceneIntent}
-                                                    onChange={(e) => setSceneIntent(e.target.value)}
-                                                    placeholder="e.g., Transformation, Lifestyle Demo, Reaction"
-                                                    disabled={!user.isPro}
-                                                    className="w-full px-4 py-3 bg-black border-2 border-gray-800 text-white placeholder-gray-600 focus:border-purple-500 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
-                                                />
-                                                <p className="text-sm text-gray-500 italic mt-1">
-                                                    💡 What&apos;s the main goal? &quot;Transformation&quot; = before/after shots, &quot;Reaction&quot; = genuine surprise moments
-                                                </p>
-                                            </div>
-                                            <div>
-                                                <label className="block text-xs font-bold text-gray-500 mb-2 tracking-wider">NARRATION STYLE</label>
-                                                <textarea
-                                                    value={narrationStyle}
-                                                    onChange={(e) => setNarrationStyle(e.target.value)}
-                                                    placeholder="Casual, Witty, Dramatic"
-                                                    rows="2"
-                                                    disabled={!user.isPro}
-                                                    className="w-full px-4 py-3 bg-black border-2 border-gray-800 text-white placeholder-gray-600 focus:border-purple-500 focus:outline-none resize-none disabled:opacity-50 disabled:cursor-not-allowed"
-                                                />
-                                                <p className="text-sm text-gray-500 italic mt-1">
-                                                    🗣️ Match your brand voice — &quot;Witty&quot; = clever one-liners, &quot;Dramatic&quot; = emotional storytelling
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </ProGate>
-                                )}
-
-                                {/* Safety Notice */}
-                                <div className="bg-yellow-500/10 border border-yellow-500/30 p-3 rounded">
-                                    <div className="flex items-start gap-2">
-                                        <div className="text-yellow-500 text-sm">⚠️</div>
-                                        <div className="text-xs text-yellow-300">
-                                            <strong>Safety Notice:</strong> Generated content avoids celebrity names and public figures to prevent platform violations. All content focuses on authentic everyday people.
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Generate Buttons */}
-                                <div className="flex gap-3">
-                                    <button
-                                        onClick={generateUGCWithAI}
-                                        disabled={!ugcBrand.trim() || ugcAILoading}
-                                        className="flex-1 py-4 bg-gradient-to-r from-purple-500 via-pink-500 to-rose-500 text-white font-black text-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
-                                    >
-                                        {ugcAILoading ? (
-                                            <>
-                                                <Loader2 className="w-6 h-6 animate-spin" />
-                                                AI GENERATING...
-                                            </>
-                                        ) : (
-                                            <>
-                                                <Sparkles className="w-6 h-6" />
-                                                AI SCRIPT & TIMELINE
-                                            </>
-                                        )}
-                                    </button>
-                                    <button
-                                        onClick={generateUGCPrompts}
-                                        disabled={!ugcBrand.trim() || loading}
-                                        className="flex-1 py-4 bg-gradient-to-r from-yellow-500 via-orange-500 to-red-500 text-black font-black text-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
-                                    >
-                                        {loading ? (
-                                            <>
-                                                <Loader2 className="w-6 h-6 animate-spin" />
-                                                GENERATING...
-                                            </>
-                                        ) : (
-                                            <>
-                                                <Film className="w-6 h-6" />
-                                                SORA PROMPTS
-                                            </>
-                                        )}
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* UGC Results */}
-                        {ugcPrompts.length > 0 && (
-                            <div className="space-y-4">
-                                {ugcPrompts.map((item, index) => (
-                                    <div key={index} className="border-2 border-yellow-500/30 bg-gray-900/50 backdrop-blur">
-                                        <div className="p-6">
-                                            <div className="flex items-start justify-between mb-4">
-                                                <h3 className="text-xl font-bold text-yellow-500">{item.title}</h3>
-                                                <button
-                                                    onClick={() => copyToClipboard(item.prompt, `ugc-${index}`)}
-                                                    className="px-4 py-2 border-2 border-yellow-500 bg-yellow-500/20 text-yellow-500 hover:bg-yellow-500 hover:text-black font-bold transition-all flex items-center gap-2"
-                                                >
-                                                    {copiedIndex === `ugc-${index}` ? (
-                                                        <>
-                                                            <Check className="w-4 h-4" />
-                                                            COPIED
-                                                        </>
-                                                    ) : (
-                                                        <>
-                                                            <Copy className="w-4 h-4" />
-                                                            COPY
-                                                        </>
-                                                    )}
-                                                </button>
-                                            </div>
-
-                                            <div className="text-xs font-bold text-yellow-500 mb-2 tracking-wider">↳ FULL SORA 2 PROMPT</div>
-                                            <p className="text-gray-300 bg-black/50 p-4 border border-gray-800 font-mono text-sm leading-relaxed whitespace-pre-line mb-4">
-                                                {item.prompt}
-                                            </p>
-
-                                            {item.timeline && (
-                                                <>
-                                                    <div className="text-xs font-bold text-cyan-500 mb-2 tracking-wider">↳ TIMELINE BREAKDOWN</div>
-                                                    <div className="bg-black/50 p-4 border border-gray-800 space-y-2">
-                                                        {item.timeline.map((segment, i) => (
-                                                            <div key={i} className="text-sm">
-                                                                <span className="text-cyan-500 font-mono font-bold">{segment.time}</span>
-                                                                <span className="text-gray-400"> → </span>
-                                                                <span className="text-gray-300">{segment.description}</span>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                </>
-                                            )}
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-
-                        {/* UGC AI Results */}
-                        {(ugcScript || ugcTimeline.length > 0 || ugcPromptIdeas) && (
-                            <div className="space-y-4">
-                                {/* Copy All Button */}
-                                <div className="flex justify-center mb-6">
-                                    <button
-                                        onClick={() => copyAllUGCResults()}
-                                        className="px-6 py-3 border-2 border-cyan-500 bg-cyan-500/20 text-cyan-500 hover:bg-cyan-500 hover:text-black font-bold transition-all flex items-center gap-2"
-                                    >
-                                        {copiedIndex === 'ugc-all' ? (
-                                            <>
-                                                <Check className="w-5 h-5" />
-                                                ALL COPIED
-                                            </>
-                                        ) : (
-                                            <>
-                                                <Copy className="w-5 h-5" />
-                                                COPY ALL UGC RESULTS
-                                            </>
-                                        )}
-                                    </button>
-                                </div>
-                                {/* Script */}
-                                {ugcScript && (
-                                    <div className="border-2 border-purple-500/30 bg-gray-900/50 backdrop-blur">
-                                        <div className="p-6">
-                                            <div className="flex items-start justify-between mb-4">
-                                                <h3 className="text-xl font-bold text-purple-500">🎬 AI-Generated Script</h3>
-                                                <div className="flex gap-2">
-                                                    <button
-                                                        onClick={() => savePrompt(ugcScript, ugcPlatform, 'ugc-script')}
-                                                        className="px-4 py-2 border-2 border-fuchsia-500 bg-fuchsia-500/20 text-fuchsia-500 hover:bg-fuchsia-500 hover:text-black font-bold transition-all flex items-center gap-2"
-                                                    >
-                                                        {savedPromptId ? (
-                                                            <>
-                                                                <Check className="w-4 h-4" />
-                                                                SAVED
-                                                            </>
-                                                        ) : (
-                                                            <>
-                                                                <Star className="w-4 h-4" />
-                                                                SAVE
-                                                            </>
-                                                        )}
-                                                    </button>
-                                                    <button
-                                                        onClick={() => copyToClipboard(ugcScript, 'ugc-script')}
-                                                        className="px-4 py-2 border-2 border-purple-500 bg-purple-500/20 text-purple-500 hover:bg-purple-500 hover:text-black font-bold transition-all flex items-center gap-2"
-                                                    >
-                                                        {copiedIndex === 'ugc-script' ? (
-                                                            <>
-                                                                <Check className="w-4 h-4" />
-                                                                COPIED
-                                                            </>
-                                                        ) : (
-                                                            <>
-                                                                <Copy className="w-4 h-4" />
-                                                                COPY
-                                                            </>
-                                                        )}
-                                                    </button>
-                                                </div>
-                                            </div>
-                                            <div className="text-xs font-bold text-purple-500 mb-2 tracking-wider">↳ FULL SCRIPT</div>
-                                            <div className="text-gray-300 bg-black/50 p-4 border border-gray-800 font-mono text-sm leading-relaxed whitespace-pre-line">
-                                                {ugcScript}
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Timeline */}
-                                {ugcTimeline.length > 0 && (
-                                    <div className="border-2 border-cyan-500/30 bg-gray-900/50 backdrop-blur">
-                                        <div className="p-6">
-                                            <div className="flex items-start justify-between mb-4">
-                                                <h3 className="text-xl font-bold text-cyan-500">⏱️ Timeline Breakdown</h3>
-                                                <div className="flex gap-2">
-                                                    <button
-                                                        onClick={() => savePrompt(JSON.stringify(ugcTimeline, null, 2), ugcPlatform, 'ugc-timeline')}
-                                                        className="px-4 py-2 border-2 border-fuchsia-500 bg-fuchsia-500/20 text-fuchsia-500 hover:bg-fuchsia-500 hover:text-black font-bold transition-all flex items-center gap-2"
-                                                    >
-                                                        {savedPromptId ? (
-                                                            <>
-                                                                <Check className="w-4 h-4" />
-                                                                SAVED
-                                                            </>
-                                                        ) : (
-                                                            <>
-                                                                <Star className="w-4 h-4" />
-                                                                SAVE
-                                                            </>
-                                                        )}
-                                                    </button>
-                                                    <button
-                                                        onClick={() => copyToClipboard(JSON.stringify(ugcTimeline, null, 2), 'ugc-timeline')}
-                                                        className="px-4 py-2 border-2 border-cyan-500 bg-cyan-500/20 text-cyan-500 hover:bg-cyan-500 hover:text-black font-bold transition-all flex items-center gap-2"
-                                                    >
-                                                        {copiedIndex === 'ugc-timeline' ? (
-                                                            <>
-                                                                <Check className="w-4 h-4" />
-                                                                COPIED
-                                                            </>
-                                                        ) : (
-                                                            <>
-                                                                <Copy className="w-4 h-4" />
-                                                                COPY
-                                                            </>
-                                                        )}
-                                                    </button>
-                                                </div>
-                                            </div>
-                                            <div className="bg-black/50 p-4 border border-gray-800 space-y-3">
-                                                {ugcTimeline.map((segment, i) => (
-                                                    <div key={i} className="flex items-start gap-3">
-                                                        <span className="text-cyan-500 font-mono font-bold text-sm min-w-[60px]">{segment.time}</span>
-                                                        <div className="flex-1">
-                                                            <div className="text-gray-300 text-sm font-medium">{segment.action}</div>
-                                                            <div className="text-gray-500 text-xs">📹 {segment.camera}</div>
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Prompt Ideas */}
-                                {ugcPromptIdeas && (
-                                    <div className="border-2 border-green-500/30 bg-gray-900/50 backdrop-blur">
-                                        <div className="p-6">
-                                            <div className="flex items-start justify-between mb-4">
-                                                <h3 className="text-xl font-bold text-green-500">🎨 AI Prompt Ideas</h3>
-                                                <div className="flex gap-2">
-                                                    <button
-                                                        onClick={() => savePrompt(JSON.stringify(ugcPromptIdeas, null, 2), ugcPlatform, 'ugc-prompts')}
-                                                        className="px-4 py-2 border-2 border-fuchsia-500 bg-fuchsia-500/20 text-fuchsia-500 hover:bg-fuchsia-500 hover:text-black font-bold transition-all flex items-center gap-2"
-                                                    >
-                                                        {savedPromptId ? (
-                                                            <>
-                                                                <Check className="w-4 h-4" />
-                                                                SAVED
-                                                            </>
-                                                        ) : (
-                                                            <>
-                                                                <Star className="w-4 h-4" />
-                                                                SAVE
-                                                            </>
-                                                        )}
-                                                    </button>
-                                                    <button
-                                                        onClick={() => copyToClipboard(JSON.stringify(ugcPromptIdeas, null, 2), 'ugc-prompts')}
-                                                        className="px-4 py-2 border-2 border-green-500 bg-green-500/20 text-green-500 hover:bg-green-500 hover:text-black font-bold transition-all flex items-center gap-2"
-                                                    >
-                                                        {copiedIndex === 'ugc-prompts' ? (
-                                                            <>
-                                                                <Check className="w-4 h-4" />
-                                                                COPIED
-                                                            </>
-                                                        ) : (
-                                                            <>
-                                                                <Copy className="w-4 h-4" />
-                                                                COPY
-                                                            </>
-                                                        )}
-                                                    </button>
-                                                </div>
-                                            </div>
-                                            <div className="space-y-4">
-                                                {ugcPromptIdeas.image && (
-                                                    <div>
-                                                        <div className="text-xs font-bold text-green-500 mb-2 tracking-wider">↳ IMAGE PROMPT</div>
-                                                        <div className="text-gray-300 bg-black/50 p-4 border border-gray-800 font-mono text-sm leading-relaxed">
-                                                            {ugcPromptIdeas.image}
-                                                        </div>
-                                                    </div>
-                                                )}
-                                                {ugcPromptIdeas.video && (
-                                                    <div>
-                                                        <div className="text-xs font-bold text-green-500 mb-2 tracking-wider">↳ VIDEO PROMPT</div>
-                                                        <div className="text-gray-300 bg-black/50 p-4 border border-gray-800 font-mono text-sm leading-relaxed">
-                                                            {ugcPromptIdeas.video}
-                                                        </div>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        )}
+                            )}
                         </>
                     </ProGate>
                 )}
@@ -1498,35 +1498,6 @@ export default function PromptGenerator() {
                                     />
                                 </div>
 
-                                {/* Output Format Toggle */}
-                                <div>
-                                    <label className="block text-xs font-bold text-gray-500 mb-2 tracking-wider">OUTPUT FORMAT</label>
-                                    <div className="flex gap-2">
-                                        <button
-                                            onClick={() => setOutputFormat('text')}
-                                            className={`flex-1 py-3 border-2 transition-all font-bold text-sm ${
-                                                outputFormat === 'text'
-                                                    ? 'border-cyan-500 bg-cyan-500/20 text-cyan-500'
-                                                    : 'border-gray-700 text-gray-500 hover:border-gray-600'
-                                            }`}
-                                        >
-                                            Single Prompt
-                                            <div className="text-xs mt-1 opacity-75">Fast & Reliable</div>
-                                        </button>
-                                        <button
-                                            onClick={() => setOutputFormat('json')}
-                                            className={`flex-1 py-3 border-2 transition-all font-bold text-sm ${
-                                                outputFormat === 'json'
-                                                    ? 'border-fuchsia-500 bg-fuchsia-500/20 text-fuchsia-500'
-                                                    : 'border-gray-700 text-gray-500 hover:border-gray-600'
-                                            }`}
-                                        >
-                                            Multiple Variations
-                                            <div className="text-xs mt-1 opacity-75">JSON Format</div>
-                                        </button>
-                                    </div>
-                                </div>
-
                                 {/* Generate Button */}
                                 <button
                                     onClick={generatePrompts}
@@ -1556,7 +1527,9 @@ export default function PromptGenerator() {
                                         <div className="p-6">
                                             <div className="flex items-start justify-between mb-4">
                                                 <div className="flex-1">
-                                                    <h3 className="text-xl font-bold text-white mb-2">{item.title}</h3>
+                                                    <h3 className="text-xl font-bold text-white mb-2">
+                                                        {item.title || `Variation ${index + 1}`}
+                                                    </h3>
                                                     <div className="flex gap-2">
                                                         <span className="text-xs font-bold px-2 py-1 bg-gray-800 text-gray-400 border border-gray-700">
                                                             {platform.toUpperCase()}
@@ -1580,7 +1553,7 @@ export default function PromptGenerator() {
                                                         <Star className="w-5 h-5" fill={isFavorited(item) ? 'currentColor' : 'none'} />
                                                     </button>
                                                     <button
-                                                        onClick={() => savePrompt(item.prompt, platform, contentType)}
+                                                        onClick={() => savePrompt(item.prompt || JSON.stringify(item, null, 2), platform, contentType)}
                                                         className="px-4 py-2 border-2 border-fuchsia-500 bg-fuchsia-500/20 text-fuchsia-500 hover:bg-fuchsia-500 hover:text-black font-bold transition-all flex items-center gap-2"
                                                     >
                                                         {savedPromptId ? (
@@ -1596,7 +1569,7 @@ export default function PromptGenerator() {
                                                         )}
                                                     </button>
                                                     <button
-                                                        onClick={() => copyToClipboard(item.prompt, `prompt-${index}`)}
+                                                        onClick={() => copyToClipboard(item.prompt || JSON.stringify(item, null, 2), `prompt-${index}`)}
                                                         className="px-4 py-2 border-2 border-cyan-500 bg-cyan-500/20 text-cyan-500 hover:bg-cyan-500 hover:text-black font-bold transition-all flex items-center gap-2"
                                                     >
                                                         {copiedIndex === `prompt-${index}` ? (
@@ -1615,10 +1588,46 @@ export default function PromptGenerator() {
                                             </div>
 
                                             <div className="mb-4">
-                                                <div className="text-xs font-bold text-cyan-500 mb-2 tracking-wider">↳ PROMPT</div>
-                                                <p className="text-gray-300 bg-black/50 p-4 border border-gray-800 font-mono text-sm leading-relaxed">
-                                                    {item.prompt}
-                                                </p>
+                                                {item.scene ? (
+                                                    // Structured JSON format
+                                                    <div className="space-y-3">
+                                                        {Object.entries(item).map(([key, value]) => {
+                                                            if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+                                                                return (
+                                                                    <div key={key} className="bg-black/50 p-4 border border-gray-800 rounded">
+                                                                        <div className="text-xs font-bold text-cyan-500 mb-2 tracking-wider capitalize">
+                                                                            ↳ {key.replace(/_/g, ' ')}
+                                                                        </div>
+                                                                        <div className="space-y-1 ml-4">
+                                                                            {Object.entries(value).map(([subKey, subValue]) => (
+                                                                                <div key={subKey} className="text-gray-300 text-sm">
+                                                                                    <span className="text-cyan-400">{subKey.replace(/_/g, ' ')}:</span>{' '}
+                                                                                    {subValue}
+                                                                                </div>
+                                                                            ))}
+                                                                        </div>
+                                                                    </div>
+                                                                );
+                                                            }
+                                                            return (
+                                                                <div key={key} className="bg-black/50 p-4 border border-gray-800 rounded">
+                                                                    <div className="text-xs font-bold text-cyan-500 mb-1 tracking-wider capitalize">
+                                                                        ↳ {key.replace(/_/g, ' ')}
+                                                                    </div>
+                                                                    <div className="text-gray-300 text-sm ml-4">{value}</div>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                ) : (
+                                                    // Old format (backward compatibility)
+                                                    <>
+                                                        <div className="text-xs font-bold text-cyan-500 mb-2 tracking-wider">↳ PROMPT</div>
+                                                        <p className="text-gray-300 bg-black/50 p-4 border border-gray-800 font-mono text-sm leading-relaxed">
+                                                            {item.prompt}
+                                                        </p>
+                                                    </>
+                                                )}
 
                                                 {/* AI Refinement Buttons */}
                                                 <div className="mt-3">
@@ -1694,167 +1703,167 @@ export default function PromptGenerator() {
                 {activeTab === 'playground' && (
                     <ProGate feature="Playground">
                         <>
-                        <div className="mb-6 p-4 border-2 border-green-500/30 bg-green-500/10">
-                            <div className="flex items-start gap-3">
-                                <Wrench className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
-                                <div>
-                                    <h3 className="font-bold text-green-500 mb-1">PROMPT PLAYGROUND</h3>
-                                    <p className="text-sm text-gray-300">Build prompts step by step. Perfect for learning prompt engineering and fine-tuning specific aspects.</p>
+                            <div className="mb-6 p-4 border-2 border-green-500/30 bg-green-500/10">
+                                <div className="flex items-start gap-3">
+                                    <Wrench className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
+                                    <div>
+                                        <h3 className="font-bold text-green-500 mb-1">PROMPT PLAYGROUND</h3>
+                                        <p className="text-sm text-gray-300">Build prompts step by step. Perfect for learning prompt engineering and fine-tuning specific aspects.</p>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
 
-                        {/* Playground Input Section */}
-                        <div className="mb-8 border-2 border-gray-800 bg-gray-900/50 backdrop-blur">
-                            <div className="p-6 space-y-4">
-                                <div>
-                                    <label className="block text-xs font-bold text-gray-500 mb-2 tracking-wider">SCENE</label>
-                                    <input
-                                        type="text"
-                                        placeholder="e.g., Idol walking in the rain"
-                                        value={playgroundScene}
-                                        onChange={e => setPlaygroundScene(e.target.value)}
-                                        className="w-full px-4 py-3 bg-black border-2 border-gray-800 text-white placeholder-gray-600 focus:border-green-500 focus:outline-none"
-                                    />
-                                </div>
+                            {/* Playground Input Section */}
+                            <div className="mb-8 border-2 border-gray-800 bg-gray-900/50 backdrop-blur">
+                                <div className="p-6 space-y-4">
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-500 mb-2 tracking-wider">SCENE</label>
+                                        <input
+                                            type="text"
+                                            placeholder="e.g., Idol walking in the rain"
+                                            value={playgroundScene}
+                                            onChange={e => setPlaygroundScene(e.target.value)}
+                                            className="w-full px-4 py-3 bg-black border-2 border-gray-800 text-white placeholder-gray-600 focus:border-green-500 focus:outline-none"
+                                        />
+                                    </div>
 
-                                <div>
-                                    <label className="block text-xs font-bold text-gray-500 mb-2 tracking-wider">STYLE</label>
-                                    <input
-                                        type="text"
-                                        placeholder="e.g., Cinematic, Anime, Dreamcore"
-                                        value={playgroundStyle}
-                                        onChange={e => setPlaygroundStyle(e.target.value)}
-                                        className="w-full px-4 py-3 bg-black border-2 border-gray-800 text-white placeholder-gray-600 focus:border-green-500 focus:outline-none"
-                                    />
-                                </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-500 mb-2 tracking-wider">STYLE</label>
+                                        <input
+                                            type="text"
+                                            placeholder="e.g., Cinematic, Anime, Dreamcore"
+                                            value={playgroundStyle}
+                                            onChange={e => setPlaygroundStyle(e.target.value)}
+                                            className="w-full px-4 py-3 bg-black border-2 border-gray-800 text-white placeholder-gray-600 focus:border-green-500 focus:outline-none"
+                                        />
+                                    </div>
 
-                                <div>
-                                    <label className="block text-xs font-bold text-gray-500 mb-2 tracking-wider">CAMERA ANGLE</label>
-                                    <input
-                                        type="text"
-                                        placeholder="e.g., Wide shot, Close-up"
-                                        value={playgroundCamera}
-                                        onChange={e => setPlaygroundCamera(e.target.value)}
-                                        className="w-full px-4 py-3 bg-black border-2 border-gray-800 text-white placeholder-gray-600 focus:border-green-500 focus:outline-none"
-                                    />
-                                </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-500 mb-2 tracking-wider">CAMERA ANGLE</label>
+                                        <input
+                                            type="text"
+                                            placeholder="e.g., Wide shot, Close-up"
+                                            value={playgroundCamera}
+                                            onChange={e => setPlaygroundCamera(e.target.value)}
+                                            className="w-full px-4 py-3 bg-black border-2 border-gray-800 text-white placeholder-gray-600 focus:border-green-500 focus:outline-none"
+                                        />
+                                    </div>
 
-                                <div>
-                                    <label className="block text-xs font-bold text-gray-500 mb-2 tracking-wider">MOOD</label>
-                                    <input
-                                        type="text"
-                                        placeholder="e.g., Hopeful, Melancholic, Intense"
-                                        value={playgroundMood}
-                                        onChange={e => setPlaygroundMood(e.target.value)}
-                                        className="w-full px-4 py-3 bg-black border-2 border-gray-800 text-white placeholder-gray-600 focus:border-green-500 focus:outline-none"
-                                    />
-                                </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-500 mb-2 tracking-wider">MOOD</label>
+                                        <input
+                                            type="text"
+                                            placeholder="e.g., Hopeful, Melancholic, Intense"
+                                            value={playgroundMood}
+                                            onChange={e => setPlaygroundMood(e.target.value)}
+                                            className="w-full px-4 py-3 bg-black border-2 border-gray-800 text-white placeholder-gray-600 focus:border-green-500 focus:outline-none"
+                                        />
+                                    </div>
 
-                                <div className="flex gap-3">
-                                    <button
-                                        onClick={shufflePlayground}
-                                        className="flex-1 py-4 bg-gradient-to-r from-purple-500 via-pink-500 to-rose-500 text-white font-black text-lg hover:opacity-90 transition-all flex items-center justify-center gap-2"
-                                    >
-                                        <Sparkles className="w-6 h-6" />
-                                        SHUFFLE
-                                    </button>
-                                    <button
-                                        onClick={generatePlaygroundPrompt}
-                                        disabled={!playgroundScene.trim() || !playgroundStyle.trim() || !playgroundCamera.trim() || !playgroundMood.trim()}
-                                        className="flex-1 py-4 bg-gradient-to-r from-green-500 via-emerald-500 to-teal-500 text-black font-black text-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
-                                    >
-                                        <Wrench className="w-6 h-6" />
-                                        GENERATE
-                                    </button>
+                                    <div className="flex gap-3">
+                                        <button
+                                            onClick={shufflePlayground}
+                                            className="flex-1 py-4 bg-gradient-to-r from-purple-500 via-pink-500 to-rose-500 text-white font-black text-lg hover:opacity-90 transition-all flex items-center justify-center gap-2"
+                                        >
+                                            <Sparkles className="w-6 h-6" />
+                                            SHUFFLE
+                                        </button>
+                                        <button
+                                            onClick={generatePlaygroundPrompt}
+                                            disabled={!playgroundScene.trim() || !playgroundStyle.trim() || !playgroundCamera.trim() || !playgroundMood.trim()}
+                                            className="flex-1 py-4 bg-gradient-to-r from-green-500 via-emerald-500 to-teal-500 text-black font-black text-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
+                                        >
+                                            <Wrench className="w-6 h-6" />
+                                            GENERATE
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
 
-                        {/* Playground Results */}
-                        {playgroundResult && (
-                            <div className="border-2 border-green-500/30 bg-gray-900/50 backdrop-blur">
-                                <div className="p-6">
-                                    <div className="flex items-start justify-between mb-4">
-                                        <h3 className="text-xl font-bold text-green-500">Generated Prompt</h3>
-                                        <div className="flex gap-2">
-                                            <button
-                                                onClick={() => savePrompt(playgroundResult, 'playground', 'image')}
-                                                className="px-4 py-2 border-2 border-fuchsia-500 bg-fuchsia-500/20 text-fuchsia-500 hover:bg-fuchsia-500 hover:text-black font-bold transition-all flex items-center gap-2"
-                                            >
-                                                {savedPromptId ? (
-                                                    <>
-                                                        <Check className="w-4 h-4" />
-                                                        SAVED
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <Star className="w-4 h-4" />
-                                                        SAVE
-                                                    </>
-                                                )}
-                                            </button>
-                                            <button
-                                                onClick={copyPlaygroundToClipboard}
-                                                className="px-4 py-2 border-2 border-green-500 bg-green-500/20 text-green-500 hover:bg-green-500 hover:text-black font-bold transition-all flex items-center gap-2"
-                                            >
-                                                {playgroundCopied ? (
-                                                    <>
-                                                        <Check className="w-4 h-4" />
-                                                        COPIED
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <Copy className="w-4 h-4" />
-                                                        COPY
-                                                    </>
-                                                )}
-                                            </button>
+                            {/* Playground Results */}
+                            {playgroundResult && (
+                                <div className="border-2 border-green-500/30 bg-gray-900/50 backdrop-blur">
+                                    <div className="p-6">
+                                        <div className="flex items-start justify-between mb-4">
+                                            <h3 className="text-xl font-bold text-green-500">Generated Prompt</h3>
+                                            <div className="flex gap-2">
+                                                <button
+                                                    onClick={() => savePrompt(playgroundResult, 'playground', 'image')}
+                                                    className="px-4 py-2 border-2 border-fuchsia-500 bg-fuchsia-500/20 text-fuchsia-500 hover:bg-fuchsia-500 hover:text-black font-bold transition-all flex items-center gap-2"
+                                                >
+                                                    {savedPromptId ? (
+                                                        <>
+                                                            <Check className="w-4 h-4" />
+                                                            SAVED
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <Star className="w-4 h-4" />
+                                                            SAVE
+                                                        </>
+                                                    )}
+                                                </button>
+                                                <button
+                                                    onClick={copyPlaygroundToClipboard}
+                                                    className="px-4 py-2 border-2 border-green-500 bg-green-500/20 text-green-500 hover:bg-green-500 hover:text-black font-bold transition-all flex items-center gap-2"
+                                                >
+                                                    {playgroundCopied ? (
+                                                        <>
+                                                            <Check className="w-4 h-4" />
+                                                            COPIED
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <Copy className="w-4 h-4" />
+                                                            COPY
+                                                        </>
+                                                    )}
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        {/* AI Refinement Buttons */}
+                                        <div className="mb-4">
+                                            <div className="text-xs font-bold text-cyan-500 mb-2 tracking-wider">↳ AI REFINEMENTS</div>
+                                            <div className="flex flex-wrap gap-2">
+                                                <button
+                                                    onClick={() => refinePlaygroundPrompt("more intense and dramatic")}
+                                                    disabled={playgroundRefining}
+                                                    className="px-3 py-1 border border-cyan-500 bg-cyan-500/20 text-cyan-500 hover:bg-cyan-500 hover:text-black text-xs font-bold transition-all disabled:opacity-50"
+                                                >
+                                                    {playgroundRefining ? "..." : "🔥 More Intense"}
+                                                </button>
+                                                <button
+                                                    onClick={() => refinePlaygroundPrompt("styled like Vogue Korea magazine")}
+                                                    disabled={playgroundRefining}
+                                                    className="px-3 py-1 border border-pink-500 bg-pink-500/20 text-pink-500 hover:bg-pink-500 hover:text-black text-xs font-bold transition-all disabled:opacity-50"
+                                                >
+                                                    {playgroundRefining ? "..." : "📸 Vogue Korea"}
+                                                </button>
+                                                <button
+                                                    onClick={() => refinePlaygroundPrompt("more cinematic and professional")}
+                                                    disabled={playgroundRefining}
+                                                    className="px-3 py-1 border border-purple-500 bg-purple-500/20 text-purple-500 hover:bg-purple-500 hover:text-black text-xs font-bold transition-all disabled:opacity-50"
+                                                >
+                                                    {playgroundRefining ? "..." : "🎬 Cinematic"}
+                                                </button>
+                                                <button
+                                                    onClick={() => refinePlaygroundPrompt("more dreamy and ethereal")}
+                                                    disabled={playgroundRefining}
+                                                    className="px-3 py-1 border border-yellow-500 bg-yellow-500/20 text-yellow-500 hover:bg-yellow-500 hover:text-black text-xs font-bold transition-all disabled:opacity-50"
+                                                >
+                                                    {playgroundRefining ? "..." : "✨ Dreamy"}
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <div className="text-xs font-bold text-green-500 mb-2 tracking-wider">↳ RESULTING PROMPT</div>
+                                        <div className="text-gray-300 bg-black/50 p-4 border border-gray-800 font-mono text-sm leading-relaxed">
+                                            {playgroundResult}
                                         </div>
                                     </div>
-
-                                    {/* AI Refinement Buttons */}
-                                    <div className="mb-4">
-                                        <div className="text-xs font-bold text-cyan-500 mb-2 tracking-wider">↳ AI REFINEMENTS</div>
-                                        <div className="flex flex-wrap gap-2">
-                                            <button
-                                                onClick={() => refinePlaygroundPrompt("more intense and dramatic")}
-                                                disabled={playgroundRefining}
-                                                className="px-3 py-1 border border-cyan-500 bg-cyan-500/20 text-cyan-500 hover:bg-cyan-500 hover:text-black text-xs font-bold transition-all disabled:opacity-50"
-                                            >
-                                                {playgroundRefining ? "..." : "🔥 More Intense"}
-                                            </button>
-                                            <button
-                                                onClick={() => refinePlaygroundPrompt("styled like Vogue Korea magazine")}
-                                                disabled={playgroundRefining}
-                                                className="px-3 py-1 border border-pink-500 bg-pink-500/20 text-pink-500 hover:bg-pink-500 hover:text-black text-xs font-bold transition-all disabled:opacity-50"
-                                            >
-                                                {playgroundRefining ? "..." : "📸 Vogue Korea"}
-                                            </button>
-                                            <button
-                                                onClick={() => refinePlaygroundPrompt("more cinematic and professional")}
-                                                disabled={playgroundRefining}
-                                                className="px-3 py-1 border border-purple-500 bg-purple-500/20 text-purple-500 hover:bg-purple-500 hover:text-black text-xs font-bold transition-all disabled:opacity-50"
-                                            >
-                                                {playgroundRefining ? "..." : "🎬 Cinematic"}
-                                            </button>
-                                            <button
-                                                onClick={() => refinePlaygroundPrompt("more dreamy and ethereal")}
-                                                disabled={playgroundRefining}
-                                                className="px-3 py-1 border border-yellow-500 bg-yellow-500/20 text-yellow-500 hover:bg-yellow-500 hover:text-black text-xs font-bold transition-all disabled:opacity-50"
-                                            >
-                                                {playgroundRefining ? "..." : "✨ Dreamy"}
-                                            </button>
-                                        </div>
-                                    </div>
-
-                                    <div className="text-xs font-bold text-green-500 mb-2 tracking-wider">↳ RESULTING PROMPT</div>
-                                    <div className="text-gray-300 bg-black/50 p-4 border border-gray-800 font-mono text-sm leading-relaxed">
-                                        {playgroundResult}
-                                    </div>
                                 </div>
-                            </div>
-                        )}
+                            )}
                         </>
                     </ProGate>
                 )}
