@@ -57,7 +57,7 @@ export async function POST(req: Request) {
                     id: userId,
                     email: clerkUser.emailAddresses[0]?.emailAddress,
                     stripe_customer_id: stripeCustomerId,
-                    subscription_status: user?.subscription_status || 'free',
+                    subscription_status: 'free', // Default to free, will be updated by webhook
                 });
         }
 
