@@ -11,8 +11,8 @@ export function Navigation() {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     
     const navItems = [
-        { href: '/', label: 'PROMPTS', icon: Zap },
         { href: '/workflows', label: 'WORKFLOWS', icon: Workflow },
+        { href: '/prompts', label: 'PROMPTS', icon: Zap },
         { href: '/saved', label: 'SAVED', icon: Sparkles },
         { href: '/pricing', label: 'PRICING', icon: DollarSign },
     ];
@@ -23,7 +23,7 @@ export function Navigation() {
                 <div className="flex items-center justify-between">
                     <Link 
                         href="/" 
-                        className="text-2xl font-black bg-gradient-to-r from-cyan-400 to-magenta-500 bg-clip-text text-transparent hover:opacity-90 transition-all"
+                        className="text-2xl font-black bg-gradient-to-r from-cyan-300 via-cyan-400 to-magenta-400 bg-clip-text text-transparent hover:opacity-90 transition-all"
                     >
                         ZUNNO
                     </Link>
@@ -32,8 +32,7 @@ export function Navigation() {
                     <div className="hidden md:flex items-center gap-6">
                         {navItems.map((item) => {
                             const Icon = item.icon;
-                            const isActive = pathname === item.href || 
-                                (item.href === '/' && pathname === '/');
+                            const isActive = pathname === item.href;
                             
                             return (
                                 <Link
@@ -83,8 +82,7 @@ export function Navigation() {
                         <div className="flex flex-col gap-4">
                             {navItems.map((item) => {
                                 const Icon = item.icon;
-                                const isActive = pathname === item.href || 
-                                    (item.href === '/' && pathname === '/');
+                                const isActive = pathname === item.href;
                                 
                                 return (
                                     <Link

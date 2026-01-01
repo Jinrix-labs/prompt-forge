@@ -75,7 +75,7 @@ export async function checkAndTrackUsage(
 
             const used = count || 0
             // Free users: daily limit for regular prompts
-            const limit = 20
+            const limit = 10
             const allowed = used < limit
 
             if (allowed) {
@@ -197,7 +197,7 @@ export async function checkAndTrackUsage(
 
         const used = count || 0
         // Free users: daily limit for regular prompts
-        const limit = 20
+        const limit = 10
         const allowed = used < limit
 
         if (allowed) {
@@ -254,7 +254,7 @@ export async function checkAndTrackUsage(
 
         const used = count || 0
         // Free users: daily limit for UGC prompts
-        const limit = 10
+        const limit = 5
         const allowed = used < limit
 
         if (allowed) {
