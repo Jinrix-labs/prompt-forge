@@ -17,7 +17,7 @@ export default function PromptGenerator() {
     const [favorites, setFavorites] = useState([]);
     const [activeTab, setActiveTab] = useState('generate');
     const [creativeMode, setCreativeMode] = useState(false);
-    const [outputFormat, setOutputFormat] = useState('text'); // 'text' or 'json'
+    const [outputFormat] = useState('text'); // 'text' or 'json'
 
     // Playground specific state
     const [playgroundScene, setPlaygroundScene] = useState('');
@@ -219,7 +219,7 @@ export default function PromptGenerator() {
                     try {
                         const parsed = JSON.parse(errorText);
                         return parsed?.error || parsed?.message || 'Failed to generate prompts';
-                    } catch (_) {
+                    } catch {
                         return errorText || 'Failed to generate prompts';
                     }
                 })());

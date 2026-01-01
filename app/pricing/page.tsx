@@ -1,9 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import { Check, Loader2 } from 'lucide-react';
-import { useUser } from '@clerk/nextjs';
 export default function PricingPage() {
     const [loading, setLoading] = useState<string | null>(null);
     const [currentTier, setCurrentTier] = useState<string>('free');
