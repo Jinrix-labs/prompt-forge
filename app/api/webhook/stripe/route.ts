@@ -71,6 +71,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
         }
 
         // Update user_subscriptions table
+        const subscriptionAny = subscription as any
         await supabaseAdmin
             .from('user_subscriptions')
             .upsert({
@@ -79,8 +80,8 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
                 stripe_subscription_id: subscription.id,
                 tier,
                 status: subscription.status,
-                current_period_end: subscription.current_period_end 
-                    ? new Date((subscription.current_period_end as number) * 1000).toISOString() 
+                current_period_end: subscriptionAny.current_period_end 
+                    ? new Date(subscriptionAny.current_period_end * 1000).toISOString() 
                     : null,
                 updated_at: new Date().toISOString(),
             }, {
@@ -196,13 +197,14 @@ async function handleSubscriptionChange(subscription: Stripe.Subscription) {
     const status = subscription.status === 'active' ? tier : 'free'
 
     // Update user_subscriptions table
+    const subscriptionAny = subscription as any
     await supabaseAdmin
         .from('user_subscriptions')
         .update({
             tier: subscription.status === 'active' ? tier : 'free',
             status: subscription.status,
-            current_period_end: subscription.current_period_end 
-                ? new Date((subscription.current_period_end as number) * 1000).toISOString() 
+            current_period_end: subscriptionAny.current_period_end 
+                ? new Date(subscriptionAny.current_period_end * 1000).toISOString() 
                 : null,
             updated_at: new Date().toISOString(),
         })
