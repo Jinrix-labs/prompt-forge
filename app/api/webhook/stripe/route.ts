@@ -61,7 +61,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
 
     if (type === 'subscription' && session.subscription) {
         // Handle subscription
-        const subscription: Stripe.Subscription = await stripe.subscriptions.retrieve(session.subscription as string)
+        const subscription = await stripe.subscriptions.retrieve(session.subscription as string) as Stripe.Subscription
         const priceId = subscription.items.data[0].price.id
 
         // Determine tier based on price
@@ -79,7 +79,9 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
                 stripe_subscription_id: subscription.id,
                 tier,
                 status: subscription.status,
-                current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+                current_period_end: subscription.current_period_end 
+                    ? new Date((subscription.current_period_end as number) * 1000).toISOString() 
+                    : null,
                 updated_at: new Date().toISOString(),
             }, {
                 onConflict: 'user_id'
@@ -134,7 +136,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     } else {
         // Legacy: Handle old checkout format (backward compatibility)
         if (session.subscription) {
-            const subscription: Stripe.Subscription = await stripe.subscriptions.retrieve(session.subscription as string)
+            const subscription = await stripe.subscriptions.retrieve(session.subscription as string) as Stripe.Subscription
             
             await supabaseAdmin
                 .from('users')
@@ -199,7 +201,9 @@ async function handleSubscriptionChange(subscription: Stripe.Subscription) {
         .update({
             tier: subscription.status === 'active' ? tier : 'free',
             status: subscription.status,
-            current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+            current_period_end: subscription.current_period_end 
+                ? new Date((subscription.current_period_end as number) * 1000).toISOString() 
+                : null,
             updated_at: new Date().toISOString(),
         })
         .eq('stripe_subscription_id', subscription.id)
