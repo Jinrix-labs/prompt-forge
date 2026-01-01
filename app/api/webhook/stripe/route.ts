@@ -61,7 +61,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
 
     if (type === 'subscription' && session.subscription) {
         // Handle subscription
-        const subscription = await stripe.subscriptions.retrieve(session.subscription as string)
+        const subscription: Stripe.Subscription = await stripe.subscriptions.retrieve(session.subscription as string)
         const priceId = subscription.items.data[0].price.id
 
         // Determine tier based on price
@@ -134,7 +134,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     } else {
         // Legacy: Handle old checkout format (backward compatibility)
         if (session.subscription) {
-            const subscription = await stripe.subscriptions.retrieve(session.subscription as string)
+            const subscription: Stripe.Subscription = await stripe.subscriptions.retrieve(session.subscription as string)
             
             await supabaseAdmin
                 .from('users')
