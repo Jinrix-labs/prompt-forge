@@ -249,9 +249,9 @@ function WorkflowCard({
                         <div className="flex items-center gap-2 mb-2">
                             <h3 className="font-bold text-white">{workflow.name}</h3>
                             {workflow.is_public ? (
-                                <Globe className="w-4 h-4 text-green-500" title="Public" />
+                                <Globe className="w-4 h-4 text-green-500" />
                             ) : (
-                                <Lock className="w-4 h-4 text-gray-500" title="Private" />
+                                <Lock className="w-4 h-4 text-gray-500" />
                             )}
                         </div>
                         <p className="text-sm text-gray-300 line-clamp-2">
