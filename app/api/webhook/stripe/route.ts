@@ -222,12 +222,15 @@ async function handleSubscriptionChange(subscription: Stripe.Subscription) {
 }
 
 async function handlePaymentFailed(invoice: Stripe.Invoice) {
-    if (!invoice.subscription) return
+    const invoiceAny = invoice as any
+    if (!invoiceAny.subscription) return
+
+    const subscriptionId = invoiceAny.subscription as string
 
     const { data: sub } = await supabaseAdmin
         .from('user_subscriptions')
         .select('user_id')
-        .eq('stripe_subscription_id', invoice.subscription as string)
+        .eq('stripe_subscription_id', subscriptionId)
         .single()
 
     if (sub) {
@@ -237,7 +240,7 @@ async function handlePaymentFailed(invoice: Stripe.Invoice) {
                 status: 'past_due',
                 updated_at: new Date().toISOString(),
             })
-            .eq('stripe_subscription_id', invoice.subscription as string)
+            .eq('stripe_subscription_id', subscriptionId)
     }
 }
 
