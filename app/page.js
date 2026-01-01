@@ -714,28 +714,9 @@ export default function PromptGenerator() {
             </div>
 
             <div className="relative z-10 max-w-6xl mx-auto px-6 py-8">
-                {/* Auth Header */}
-                <div className="flex justify-end mb-4">
-                    <SignedOut>
-                        <SignInButton mode="modal">
-                            <button className="px-4 py-2 bg-cyan-500 hover:bg-cyan-600 text-black font-bold rounded transition-colors">
-                                Sign In
-                            </button>
-                        </SignInButton>
-                    </SignedOut>
-                    <SignedIn>
-                        <UserButton />
-                    </SignedIn>
-                </div>
-
                 {/* Header */}
                 <div className="text-center mb-12">
-                    <div className="inline-block mb-4">
-                        <div className="flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-cyan-500 via-fuchsia-500 to-yellow-500 rounded-full">
-                            <Zap className="w-6 h-6 text-black" fill="black" />
-                            <h1 className="text-3xl font-black text-black tracking-tight">ZUNNO</h1>
-                        </div>
-                    </div>
+                    <h1 className="text-4xl font-black text-white mb-4">⚡ PROMPT GENERATOR</h1>
                     <p className="text-gray-400 text-lg">AI-Powered Prompt Generation for Creators</p>
                 </div>
 
@@ -778,13 +759,6 @@ export default function PromptGenerator() {
                         <Wrench className="w-4 h-4" />
                         PLAYGROUND
                     </button>
-                    <a
-                        href="/saved"
-                        className="px-6 py-3 font-bold transition-all border-b-2 flex items-center gap-2 border-transparent text-gray-500 hover:text-gray-300 hover:border-fuchsia-500"
-                    >
-                        <Star className="w-4 h-4" />
-                        SAVED PROMPTS
-                    </a>
                 </div>
 
                 {/* Upgrade CTA when rate limited */}
