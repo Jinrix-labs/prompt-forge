@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeft, Calendar, CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import { ProGate } from '@/components/ProGate';
@@ -26,14 +26,7 @@ export default function WorkflowHistoryPage() {
     const [executions, setExecutions] = useState<Execution[]>([]);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        if (workflowId) {
-            loadWorkflow();
-            loadExecutions();
-        }
-    }, [workflowId]);
-
-    async function loadWorkflow() {
+    const loadWorkflow = useCallback(async () => {
         try {
             const res = await fetch(`/api/workflows/${workflowId}`);
             const data = await res.json();
@@ -43,9 +36,9 @@ export default function WorkflowHistoryPage() {
         } catch (error) {
             console.error('Failed to load workflow:', error);
         }
-    }
+    }, [workflowId]);
 
-    async function loadExecutions() {
+    const loadExecutions = useCallback(async () => {
         try {
             const res = await fetch(`/api/workflows/${workflowId}/executions`);
             const data = await res.json();
@@ -55,7 +48,14 @@ export default function WorkflowHistoryPage() {
         } finally {
             setLoading(false);
         }
-    }
+    }, [workflowId]);
+
+    useEffect(() => {
+        if (workflowId) {
+            loadWorkflow();
+            loadExecutions();
+        }
+    }, [workflowId, loadWorkflow, loadExecutions]);
 
     if (loading) {
         return (

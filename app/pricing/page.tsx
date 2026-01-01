@@ -2,13 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Check, Zap, Loader2 } from 'lucide-react';
+import { Check, Loader2 } from 'lucide-react';
 import { useUser } from '@clerk/nextjs';
-import { ProGate } from '@/components/ProGate';
-
 export default function PricingPage() {
-    const router = useRouter();
-    const { user } = useUser();
     const [loading, setLoading] = useState<string | null>(null);
     const [currentTier, setCurrentTier] = useState<string>('free');
     const [credits, setCredits] = useState<number>(0);

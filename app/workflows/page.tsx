@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useUser } from '@clerk/nextjs';
@@ -25,12 +25,7 @@ export default function WorkflowsPage() {
     const [showPublic, setShowPublic] = useState(false);
     const [credits, setCredits] = useState<number>(0);
 
-    useEffect(() => {
-        loadWorkflows();
-        loadCredits();
-    }, [showPublic]);
-
-    async function loadCredits() {
+    const loadCredits = useCallback(async () => {
         try {
             const res = await fetch('/api/user/credits');
             if (res.ok) {
@@ -40,9 +35,9 @@ export default function WorkflowsPage() {
         } catch (error) {
             console.error('Failed to load credits:', error);
         }
-    }
+    }, []);
 
-    async function loadWorkflows() {
+    const loadWorkflows = useCallback(async () => {
         try {
             setLoading(true);
             const url = showPublic ? '/api/workflows?public=true' : '/api/workflows';
@@ -54,7 +49,12 @@ export default function WorkflowsPage() {
         } finally {
             setLoading(false);
         }
-    }
+    }, [showPublic]);
+
+    useEffect(() => {
+        loadWorkflows();
+        loadCredits();
+    }, [loadWorkflows, loadCredits]);
 
     async function deleteWorkflow(id: string) {
         if (!confirm('Are you sure you want to delete this workflow?')) return;

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Play, Loader2, CheckCircle, XCircle, ArrowLeft, Copy, Check, History } from 'lucide-react';
 import { ProGate } from '@/components/ProGate';
@@ -39,13 +39,7 @@ export default function RunWorkflowPage() {
     } | null>(null);
     const [copied, setCopied] = useState(false);
 
-    useEffect(() => {
-        if (workflowId) {
-            loadWorkflow();
-        }
-    }, [workflowId]);
-
-    async function loadWorkflow() {
+    const loadWorkflow = useCallback(async () => {
         try {
             const res = await fetch(`/api/workflows/${workflowId}`);
             const data = await res.json();
@@ -65,14 +59,20 @@ export default function RunWorkflowPage() {
         } finally {
             setLoading(false);
         }
-    }
+    }, [workflowId]);
+
+    useEffect(() => {
+        if (workflowId) {
+            loadWorkflow();
+        }
+    }, [workflowId, loadWorkflow]);
 
     // Extract what inputs the user needs to provide
     function extractInputFields(steps: any[]): string[] {
         const fields = new Set<string>();
         
         steps.forEach(step => {
-            Object.entries(step.inputs || {}).forEach(([key, source]) => {
+            Object.entries(step.inputs || {}).forEach(([_key, source]) => {
                 if ((source as string).startsWith('user_input.')) {
                     const field = (source as string).replace('user_input.', '');
                     fields.add(field);
@@ -211,7 +211,7 @@ export default function RunWorkflowPage() {
                         <h2 className="text-lg font-black text-cyan-400 mb-4">INPUTS</h2>
                         
                         {inputFields.length === 0 ? (
-                            <p className="text-gray-400">This workflow doesn't require any inputs</p>
+                            <p className="text-gray-400">This workflow doesn&apos;t require any inputs</p>
                         ) : (
                             <div className="space-y-4">
                                 {inputFields.map((field) => (

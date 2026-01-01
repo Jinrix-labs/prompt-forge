@@ -337,7 +337,7 @@ CRITICAL: You MUST return exactly 4 prompts in the array. Each prompt should be 
         function extractAndParseJSON(text) {
             try {
                 return JSON.parse(text);
-            } catch (e) {
+            } catch (_e) {
                 let cleaned = text
                     .replace(/```json\n?/gi, '')
                     .replace(/```\n?/g, '')
@@ -353,7 +353,7 @@ CRITICAL: You MUST return exactly 4 prompts in the array. Each prompt should be 
 
                 try {
                     return JSON.parse(cleaned);
-                } catch (e2) {
+                } catch (_e2) {
                     throw new Error('Invalid JSON from AI');
                 }
             }

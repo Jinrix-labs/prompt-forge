@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { 
     Plus, 
@@ -47,13 +47,7 @@ export default function EditWorkflowPage() {
     const [steps, setSteps] = useState<WorkflowStep[]>([]);
     const [saving, setSaving] = useState(false);
 
-    useEffect(() => {
-        if (workflowId) {
-            loadWorkflow();
-        }
-    }, [workflowId]);
-
-    async function loadWorkflow() {
+    const loadWorkflow = useCallback(async () => {
         try {
             const res = await fetch(`/api/workflows/${workflowId}`);
             const data = await res.json();
@@ -69,7 +63,13 @@ export default function EditWorkflowPage() {
         } finally {
             setLoading(false);
         }
-    }
+    }, [workflowId]);
+
+    useEffect(() => {
+        if (workflowId) {
+            loadWorkflow();
+        }
+    }, [workflowId, loadWorkflow]);
 
     function addStep() {
         const newStep: WorkflowStep = {

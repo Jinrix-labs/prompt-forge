@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 
 interface UpgradeButtonProps {
     priceId?: string;
@@ -10,7 +9,6 @@ interface UpgradeButtonProps {
 }
 
 export function UpgradeButton({ priceId, type = 'subscription', label }: UpgradeButtonProps) {
-    const router = useRouter();
     const [loading, setLoading] = useState(false);
 
     const handleUpgrade = async () => {

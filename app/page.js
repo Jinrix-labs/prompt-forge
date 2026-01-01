@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Zap, Copy, Check, Loader2, Star, Trash2, Image as ImageIcon, Video, Sparkles, Film, Wrench } from 'lucide-react';
-import { SignedIn, SignedOut, SignInButton, UserButton } from "@clerk/nextjs";
+import { Copy, Check, Loader2, Star, Trash2, Image as ImageIcon, Video, Sparkles, Film, Wrench } from 'lucide-react';
+import { SignedIn } from "@clerk/nextjs";
 import { UsageDisplay } from "@/components/UsageDisplay";
 import { ProGate } from "@/components/ProGate";
 import { UpgradeButton } from "@/components/UpgradeButton";

@@ -269,7 +269,7 @@ export async function POST(request: Request) {
 async function executeStep(
     step: any,
     context: Record<string, any>,
-    userId: string
+    _userId: string
 ): Promise<{ output: any; tokensUsed: number }> {
     // Resolve input variables from context
     const resolvedInputs: Record<string, string> = {};

@@ -16,7 +16,7 @@ function getCurrentMonth() {
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-export async function GET(req: Request) {
+export async function GET(_req: Request) {
     try {
         const { userId } = await auth();
         if (!userId) {

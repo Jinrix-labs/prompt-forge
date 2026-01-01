@@ -10,7 +10,6 @@ import {
     Save,
     ChevronDown,
     ChevronUp,
-    Play,
     ArrowLeft,
     Loader2
 } from 'lucide-react';
