@@ -13,11 +13,7 @@ export const dynamic = 'force-dynamic';
 // GET - List all workflows for the user
 export async function GET(req: Request) {
     try {
-        const { userId } = await auth();
-        if (!userId) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-        }
-
+        const { userId } = await auth(); // This will be null if not signed in
         const { searchParams } = new URL(req.url);
         const includePublic = searchParams.get('public') === 'true';
 
@@ -27,9 +23,19 @@ export async function GET(req: Request) {
             .order('created_at', { ascending: false });
 
         if (includePublic) {
-            // Get user's workflows + public workflows
-            query = query.or(`user_id.eq.${userId},is_public.eq.true`);
+            // Viewing public templates
+            if (!userId) {
+                // Not signed in - only show public workflows
+                query = query.eq('is_public', true);
+            } else {
+                // Signed in - show user's workflows + public workflows
+                query = query.or(`user_id.eq.${userId},is_public.eq.true`);
+            }
         } else {
+            // Private view - requires auth
+            if (!userId) {
+                return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+            }
             // Just user's workflows
             query = query.eq('user_id', userId);
         }

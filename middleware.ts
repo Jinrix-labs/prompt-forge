@@ -9,6 +9,19 @@ const isPublicRoute = createRouteMatcher([
 ]);
 
 export default clerkMiddleware(async (auth, request) => {
+    // Allow viewing public workflows without auth
+    const url = new URL(request.url);
+    if (url.pathname === '/workflows' && url.searchParams.get('public') === 'true') {
+        // Allow public templates page to be viewed without auth
+        return;
+    }
+    
+    // Allow API route for public workflows without auth
+    if (url.pathname === '/api/workflows' && url.searchParams.get('public') === 'true') {
+        // Allow fetching public workflows without auth
+        return;
+    }
+    
     if (!isPublicRoute(request)) {
         await auth.protect();
     }

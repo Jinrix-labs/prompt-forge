@@ -1,9 +1,9 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { useUser } from '@clerk/nextjs';
+import { useUser, SignInButton } from '@clerk/nextjs';
 import { Sparkles, Plus, Play, Trash2, Copy, Globe, Lock, Loader2 } from 'lucide-react';
 import { ProGate } from '@/components/ProGate';
 
@@ -19,13 +19,15 @@ type Workflow = {
 
 export default function WorkflowsPage() {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const { user } = useUser();
     const [workflows, setWorkflows] = useState<Workflow[]>([]);
     const [loading, setLoading] = useState(true);
-    const [showPublic, setShowPublic] = useState(false);
+    const [showPublic, setShowPublic] = useState(searchParams.get('public') === 'true');
     const [credits, setCredits] = useState<number>(0);
 
     const loadCredits = useCallback(async () => {
+        if (!user) return; // Only load credits if signed in
         try {
             const res = await fetch('/api/user/credits');
             if (res.ok) {
@@ -35,21 +37,39 @@ export default function WorkflowsPage() {
         } catch (error) {
             console.error('Failed to load credits:', error);
         }
-    }, []);
+    }, [user]);
 
     const loadWorkflows = useCallback(async () => {
         try {
             setLoading(true);
             const url = showPublic ? '/api/workflows?public=true' : '/api/workflows';
             const res = await fetch(url);
+            
+            if (!res.ok) {
+                // If not OK, try to get error message
+                const errorText = await res.text();
+                console.error('Failed to load workflows:', res.status, errorText);
+                setWorkflows([]);
+                return;
+            }
+            
             const data = await res.json();
             setWorkflows(data.workflows || []);
         } catch (error) {
             console.error('Failed to load workflows:', error);
+            setWorkflows([]);
         } finally {
             setLoading(false);
         }
     }, [showPublic]);
+
+    useEffect(() => {
+        // Check URL params on mount
+        const publicParam = searchParams.get('public');
+        if (publicParam === 'true') {
+            setShowPublic(true);
+        }
+    }, [searchParams]);
 
     useEffect(() => {
         loadWorkflows();
@@ -77,6 +97,11 @@ export default function WorkflowsPage() {
     }
 
     async function cloneWorkflow(id: string) {
+        if (!user) {
+            // Show sign-in prompt
+            alert('Please sign in to clone workflows');
+            return;
+        }
         try {
             const res = await fetch(`/api/workflows/${id}/clone`, {
                 method: 'POST',
@@ -96,7 +121,7 @@ export default function WorkflowsPage() {
     }
 
     const myWorkflows = workflows.filter(w => w.user_id === user?.id);
-    const publicWorkflows = workflows.filter(w => w.user_id !== user?.id && w.is_public);
+    const publicWorkflows = workflows.filter(w => w.is_public);
 
     return (
         <div className="min-h-screen bg-black text-white">
@@ -108,50 +133,39 @@ export default function WorkflowsPage() {
             </div>
 
             <div className="relative z-10 max-w-6xl mx-auto px-6 py-8">
-                <ProGate feature="Workflows">
+                {showPublic && !user ? (
+                    // Public templates view - no auth required
+                    <>
                     {/* Header */}
                     <div className="flex items-center justify-between mb-8 bg-gray-900/60 backdrop-blur-sm border-2 border-gray-800 rounded-lg p-6">
                         <div>
-                            <h1 className="text-3xl font-black text-white mb-2">⚡ WORKFLOWS</h1>
+                            <h1 className="text-3xl font-black text-white mb-2">⚡ PUBLIC TEMPLATES</h1>
                             <p className="text-gray-300">
-                                Create and manage AI-powered workflow automations
+                                Browse and clone workflow templates created by the community
                             </p>
                         </div>
                         <div className="flex items-center gap-4">
-                            <div className="text-sm border-2 border-gray-600 bg-gray-900/80 backdrop-blur-sm px-4 py-2 rounded">
-                                <span className="text-gray-400">Credits: </span>
-                                <span className="text-cyan-400 font-bold">{credits}</span>
-                                {credits === 0 && (
-                                    <Link
-                                        href="/pricing"
-                                        className="ml-2 text-fuchsia-400 hover:text-fuchsia-300 underline text-xs"
-                                    >
-                                        Buy More
-                                    </Link>
-                                )}
-                            </div>
-                            <button
-                                onClick={() => router.push('/workflows/new')}
-                                className="flex items-center gap-2 border-2 border-cyan-500 bg-cyan-500/20 text-cyan-500 hover:bg-cyan-500 hover:text-black font-bold px-4 py-2 transition-all"
-                            >
-                                <Plus className="w-5 h-5" />
-                                NEW WORKFLOW
-                            </button>
+                            <SignInButton mode="modal">
+                                <button className="flex items-center gap-2 border-2 border-cyan-500 bg-cyan-500/20 text-cyan-500 hover:bg-cyan-500 hover:text-black font-bold px-4 py-2 transition-all">
+                                    SIGN IN TO CLONE
+                                </button>
+                            </SignInButton>
                         </div>
                     </div>
 
                     {/* Tabs */}
                     <div className="flex gap-4 mb-6 border-b-2 border-gray-700 bg-gray-900/40 backdrop-blur-sm px-4 py-2 rounded-t-lg">
-                        <button
-                            onClick={() => setShowPublic(false)}
-                            className={`pb-2 px-1 font-bold transition ${
-                                !showPublic
-                                    ? 'text-cyan-500 border-b-2 border-cyan-500'
-                                    : 'text-gray-600 hover:text-gray-400'
-                            }`}
-                        >
-                            MY WORKFLOWS ({myWorkflows.length})
-                        </button>
+                        <SignInButton mode="modal">
+                            <button
+                                className={`pb-2 px-1 font-bold transition ${
+                                    !showPublic
+                                        ? 'text-cyan-500 border-b-2 border-cyan-500'
+                                        : 'text-gray-600 hover:text-gray-400'
+                                }`}
+                            >
+                                MY WORKFLOWS
+                            </button>
+                        </SignInButton>
                         <button
                             onClick={() => setShowPublic(true)}
                             className={`pb-2 px-1 font-bold transition ${
@@ -206,20 +220,141 @@ export default function WorkflowsPage() {
                                 </div>
                             )}
 
-                            {(showPublic ? publicWorkflows : myWorkflows).map((workflow) => (
+                            {publicWorkflows.map((workflow) => (
                                 <WorkflowCard
                                     key={workflow.id}
                                     workflow={workflow}
-                                    isOwner={workflow.user_id === user?.id}
+                                    isOwner={false}
+                                    isSignedIn={false}
                                     onDelete={deleteWorkflow}
                                     onClone={cloneWorkflow}
-                                    onRun={(id) => router.push(`/workflows/${id}/run`)}
-                                    onEdit={(id) => router.push(`/workflows/${id}/edit`)}
+                                    onRun={(id) => {
+                                        alert('Please sign in to run workflows');
+                                    }}
+                                    onEdit={(id) => {
+                                        alert('Please sign in to edit workflows');
+                                    }}
                                 />
                             ))}
                         </div>
                     )}
-                </ProGate>
+                    </>
+                ) : (
+                    // Signed in or viewing private workflows - use ProGate
+                    <ProGate feature="Workflows">
+                        {/* Header */}
+                        <div className="flex items-center justify-between mb-8 bg-gray-900/60 backdrop-blur-sm border-2 border-gray-800 rounded-lg p-6">
+                            <div>
+                                <h1 className="text-3xl font-black text-white mb-2">⚡ WORKFLOWS</h1>
+                                <p className="text-gray-300">
+                                    Create and manage AI-powered workflow automations
+                                </p>
+                            </div>
+                            <div className="flex items-center gap-4">
+                                <div className="text-sm border-2 border-gray-600 bg-gray-900/80 backdrop-blur-sm px-4 py-2 rounded">
+                                    <span className="text-gray-400">Credits: </span>
+                                    <span className="text-cyan-400 font-bold">{credits}</span>
+                                    {credits === 0 && (
+                                        <Link
+                                            href="/pricing"
+                                            className="ml-2 text-fuchsia-400 hover:text-fuchsia-300 underline text-xs"
+                                        >
+                                            Buy More
+                                        </Link>
+                                    )}
+                                </div>
+                                <button
+                                    onClick={() => router.push('/workflows/new')}
+                                    className="flex items-center gap-2 border-2 border-cyan-500 bg-cyan-500/20 text-cyan-500 hover:bg-cyan-500 hover:text-black font-bold px-4 py-2 transition-all"
+                                >
+                                    <Plus className="w-5 h-5" />
+                                    NEW WORKFLOW
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Tabs */}
+                        <div className="flex gap-4 mb-6 border-b-2 border-gray-700 bg-gray-900/40 backdrop-blur-sm px-4 py-2 rounded-t-lg">
+                            <button
+                                onClick={() => setShowPublic(false)}
+                                className={`pb-2 px-1 font-bold transition ${
+                                    !showPublic
+                                        ? 'text-cyan-500 border-b-2 border-cyan-500'
+                                        : 'text-gray-600 hover:text-gray-400'
+                                }`}
+                            >
+                                MY WORKFLOWS ({myWorkflows.length})
+                            </button>
+                            <button
+                                onClick={() => setShowPublic(true)}
+                                className={`pb-2 px-1 font-bold transition ${
+                                    showPublic
+                                        ? 'text-fuchsia-500 border-b-2 border-fuchsia-500'
+                                        : 'text-gray-600 hover:text-gray-400'
+                                }`}
+                            >
+                                PUBLIC LIBRARY ({publicWorkflows.length})
+                            </button>
+                        </div>
+
+                        {/* Loading State */}
+                        {loading && (
+                            <div className="text-center py-12">
+                                <Loader2 className="w-8 h-8 animate-spin mx-auto mb-2 text-cyan-500" />
+                                <p className="text-gray-400">Loading workflows...</p>
+                            </div>
+                        )}
+
+                        {/* Workflow Grid */}
+                        {!loading && (
+                            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {!showPublic && myWorkflows.length === 0 && (
+                                <div className="col-span-full border-2 border-dashed border-gray-700 bg-gray-900/80 backdrop-blur-sm p-16 text-center">
+                                        <Sparkles className="w-12 h-12 text-gray-600 mx-auto mb-3" />
+                                        <h3 className="text-lg font-bold text-white mb-1">
+                                            No workflows yet
+                                        </h3>
+                                        <p className="text-gray-500 mb-4">
+                                            Create your first AI workflow to get started
+                                        </p>
+                                        <button
+                                            onClick={() => router.push('/workflows/new')}
+                                            className="inline-flex items-center gap-2 border-2 border-cyan-500 bg-cyan-500/20 text-cyan-500 hover:bg-cyan-500 hover:text-black font-bold px-4 py-2 transition-all"
+                                        >
+                                            <Plus className="w-4 h-4" />
+                                            CREATE WORKFLOW
+                                        </button>
+                                    </div>
+                                )}
+
+                            {showPublic && publicWorkflows.length === 0 && (
+                                <div className="col-span-full border-2 border-dashed border-gray-700 bg-gray-900/80 backdrop-blur-sm p-16 text-center">
+                                        <Globe className="w-12 h-12 text-gray-600 mx-auto mb-3" />
+                                        <h3 className="text-lg font-bold text-white mb-1">
+                                            No public workflows
+                                        </h3>
+                                        <p className="text-gray-500">
+                                            Public workflows will appear here when available
+                                        </p>
+                                    </div>
+                                )}
+
+                                {(showPublic ? publicWorkflows : myWorkflows).map((workflow) => (
+                                    <WorkflowCard
+                                        key={workflow.id}
+                                        workflow={workflow}
+                                        isOwner={workflow.user_id === user?.id}
+                                        isSignedIn={!!user}
+                                        onDelete={deleteWorkflow}
+                                        onClone={cloneWorkflow}
+                                        onRun={(id) => router.push(`/workflows/${id}/run`)}
+                                        onEdit={(id) => router.push(`/workflows/${id}/edit`)}
+                                    />
+                                ))}
+                            </div>
+                        )}
+                    </ProGate>
+                )}
             </div>
         </div>
     );
@@ -228,6 +363,7 @@ export default function WorkflowsPage() {
 function WorkflowCard({
     workflow,
     isOwner,
+    isSignedIn = true,
     onDelete,
     onClone,
     onRun,
@@ -235,6 +371,7 @@ function WorkflowCard({
 }: {
     workflow: Workflow;
     isOwner: boolean;
+    isSignedIn?: boolean;
     onDelete: (id: string) => void;
     onClone: (id: string) => void;
     onRun: (id: string) => void;
@@ -269,37 +406,48 @@ function WorkflowCard({
 
                 {/* Actions */}
                 <div className="flex items-center gap-2">
-                    <button
-                        onClick={() => onRun(workflow.id)}
-                        className="flex-1 flex items-center justify-center gap-2 border-2 border-cyan-500 bg-cyan-500/20 text-cyan-500 hover:bg-cyan-500 hover:text-black font-bold px-3 py-2 transition-all text-sm"
-                    >
-                        <Play className="w-4 h-4" />
-                        RUN
-                    </button>
-
-                    {isOwner ? (
+                    {isSignedIn ? (
                         <>
                             <button
-                                onClick={() => onEdit(workflow.id)}
-                                className="px-3 py-2 border-2 border-gray-700 bg-gray-800/50 text-gray-400 hover:border-gray-600 hover:text-white transition-all text-sm font-bold"
+                                onClick={() => onRun(workflow.id)}
+                                className="flex-1 flex items-center justify-center gap-2 border-2 border-cyan-500 bg-cyan-500/20 text-cyan-500 hover:bg-cyan-500 hover:text-black font-bold px-3 py-2 transition-all text-sm"
                             >
-                                EDIT
+                                <Play className="w-4 h-4" />
+                                RUN
                             </button>
-                            <button
-                                onClick={() => onDelete(workflow.id)}
-                                className="p-2 border-2 border-red-500 bg-red-500/20 text-red-500 hover:bg-red-500 hover:text-black transition-all"
-                            >
-                                <Trash2 className="w-4 h-4" />
-                            </button>
+
+                            {isOwner ? (
+                                <>
+                                    <button
+                                        onClick={() => onEdit(workflow.id)}
+                                        className="px-3 py-2 border-2 border-gray-700 bg-gray-800/50 text-gray-400 hover:border-gray-600 hover:text-white transition-all text-sm font-bold"
+                                    >
+                                        EDIT
+                                    </button>
+                                    <button
+                                        onClick={() => onDelete(workflow.id)}
+                                        className="p-2 border-2 border-red-500 bg-red-500/20 text-red-500 hover:bg-red-500 hover:text-black transition-all"
+                                    >
+                                        <Trash2 className="w-4 h-4" />
+                                    </button>
+                                </>
+                            ) : (
+                                <button
+                                    onClick={() => onClone(workflow.id)}
+                                    className="px-3 py-2 border-2 border-gray-700 bg-gray-800/50 text-gray-400 hover:border-gray-600 hover:text-white transition-all text-sm font-bold flex items-center gap-1"
+                                >
+                                    <Copy className="w-4 h-4" />
+                                    CLONE
+                                </button>
+                            )}
                         </>
                     ) : (
-                        <button
-                            onClick={() => onClone(workflow.id)}
-                            className="px-3 py-2 border-2 border-gray-700 bg-gray-800/50 text-gray-400 hover:border-gray-600 hover:text-white transition-all text-sm font-bold flex items-center gap-1"
-                        >
-                            <Copy className="w-4 h-4" />
-                            CLONE
-                        </button>
+                        <SignInButton mode="modal">
+                            <button className="w-full flex items-center justify-center gap-2 border-2 border-cyan-500 bg-cyan-500/20 text-cyan-500 hover:bg-cyan-500 hover:text-black font-bold px-3 py-2 transition-all text-sm">
+                                <Play className="w-4 h-4" />
+                                SIGN IN TO USE
+                            </button>
+                        </SignInButton>
                     )}
                 </div>
             </div>
