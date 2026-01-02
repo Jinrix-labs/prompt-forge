@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useUser, SignInButton } from '@clerk/nextjs';
@@ -17,7 +17,7 @@ type Workflow = {
     user_id: string;
 };
 
-export default function WorkflowsPage() {
+function WorkflowsPageContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const { user } = useUser();
@@ -228,10 +228,10 @@ export default function WorkflowsPage() {
                                     isSignedIn={false}
                                     onDelete={deleteWorkflow}
                                     onClone={cloneWorkflow}
-                                    onRun={(id) => {
+                                    onRun={(_id) => {
                                         alert('Please sign in to run workflows');
                                     }}
-                                    onEdit={(id) => {
+                                    onEdit={(_id) => {
                                         alert('Please sign in to edit workflows');
                                     }}
                                 />
@@ -452,6 +452,23 @@ function WorkflowCard({
                 </div>
             </div>
         </div>
+    );
+}
+
+export default function WorkflowsPage() {
+    return (
+        <Suspense 
+            fallback={
+                <div className="min-h-screen bg-black text-white flex items-center justify-center">
+                    <div className="text-center">
+                        <Loader2 className="w-8 h-8 animate-spin text-cyan-500 mx-auto mb-2" />
+                        <p className="text-gray-400">Loading workflows...</p>
+                    </div>
+                </div>
+            }
+        >
+            <WorkflowsPageContent />
+        </Suspense>
     );
 }
 
