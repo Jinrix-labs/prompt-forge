@@ -247,7 +247,7 @@ export default function PricingPage() {
 
                                 {pkg.priceId && pkg.priceId.startsWith('price_') ? (
                                     <button
-                                        onClick={() => handleCheckout(pkg.priceId, 'credits')}
+                                        onClick={() => handleCheckout(pkg.priceId!, 'credits')}
                                         disabled={loading !== null}
                                         className="w-full border-2 border-fuchsia-500 bg-fuchsia-500/20 text-fuchsia-500 hover:bg-fuchsia-500 hover:text-black font-bold py-3 rounded transition-all disabled:opacity-50"
                                     >
