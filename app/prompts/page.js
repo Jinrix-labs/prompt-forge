@@ -776,8 +776,7 @@ export default function PromptGenerator() {
 
                 {/* UGC Generator Tab */}
                 {activeTab === 'ugc' && (
-                    <ProGate feature="UGC Generator">
-                        <>
+                    <>
                             <div className="mb-6 p-4 border-2 border-yellow-500/30 bg-yellow-500/10">
                                 <div className="flex items-start gap-3">
                                     <Sparkles className="w-5 h-5 text-yellow-500 mt-0.5 flex-shrink-0" />
@@ -1359,8 +1358,7 @@ export default function PromptGenerator() {
                                     )}
                                 </div>
                             )}
-                        </>
-                    </ProGate>
+                    </>
                 )}
 
                 {/* Regular Generate Tab */}

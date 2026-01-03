@@ -240,8 +240,8 @@ function WorkflowsPageContent() {
                     )}
                     </>
                 ) : (
-                    // Signed in or viewing private workflows - use ProGate
-                    <ProGate feature="Workflows">
+                    // Signed in or viewing private workflows - allow browsing
+                    <>
                         {/* Header */}
                         <div className="flex items-center justify-between mb-8 bg-gray-900/60 backdrop-blur-sm border-2 border-gray-800 rounded-lg p-6">
                             <div>
@@ -350,10 +350,10 @@ function WorkflowsPageContent() {
                                         onRun={(id) => router.push(`/workflows/${id}/run`)}
                                         onEdit={(id) => router.push(`/workflows/${id}/edit`)}
                                     />
-                                ))}
-                            </div>
-                        )}
-                    </ProGate>
+                            ))}
+                        </div>
+                    )}
+                    </>
                 )}
             </div>
         </div>

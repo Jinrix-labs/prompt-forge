@@ -15,7 +15,6 @@ import {
     Globe,
     Lock
 } from 'lucide-react';
-import { ProGate } from '@/components/ProGate';
 
 type StepType = 'prompt_generation' | 'text_transform' | 'text_combine';
 
@@ -170,7 +169,6 @@ export default function EditWorkflowPage() {
             </div>
 
             <div className="relative z-10 max-w-4xl mx-auto px-6 py-8">
-                <ProGate feature="Workflow Editor">
                     {/* Header */}
                     <button
                         onClick={() => router.push('/workflows')}
@@ -318,7 +316,6 @@ export default function EditWorkflowPage() {
                             )}
                         </button>
                     </div>
-                </ProGate>
             </div>
         </div>
     );

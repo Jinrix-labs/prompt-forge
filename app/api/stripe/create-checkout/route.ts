@@ -29,6 +29,13 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'Missing priceId or type' }, { status: 400 });
         }
 
+        // Validate priceId format (Stripe price IDs start with 'price_')
+        if (typeof priceId !== 'string' || !priceId.startsWith('price_')) {
+            return NextResponse.json({ 
+                error: 'Invalid priceId format. Please contact support.' 
+            }, { status: 400 });
+        }
+
         // Get or create Stripe customer
         const { data: user } = await supabaseAdmin
             .from('users')
@@ -68,7 +75,7 @@ export async function POST(req: Request) {
             client_reference_id: userId,
             line_items: [
                 {
-                    price: priceId,
+                    price: priceId, // Must be a valid Stripe price ID (starts with 'price_')
                     quantity: 1,
                 },
             ],

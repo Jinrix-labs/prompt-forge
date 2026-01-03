@@ -74,7 +74,7 @@ export default function PricingPage() {
             price: '$29.99',
             period: 'month',
             tier: 'pro',
-            priceId: process.env.NEXT_PUBLIC_STRIPE_PRO_PRICE_ID || 'price_pro',
+            priceId: process.env.NEXT_PUBLIC_STRIPE_PRO_PRICE_ID,
             limit: '300 workflow runs/month',
             features: [
                 '300 workflow runs per month',
@@ -89,7 +89,7 @@ export default function PricingPage() {
             price: '$49.99',
             period: 'month',
             tier: 'premium',
-            priceId: process.env.NEXT_PUBLIC_STRIPE_PREMIUM_PRICE_ID || 'price_premium',
+            priceId: process.env.NEXT_PUBLIC_STRIPE_PREMIUM_PRICE_ID,
             limit: '1000 workflow runs/month',
             features: [
                 '1000 workflow runs per month',
@@ -107,14 +107,14 @@ export default function PricingPage() {
             name: '100 Credits',
             credits: 100,
             price: '$9.99',
-            priceId: process.env.NEXT_PUBLIC_STRIPE_CREDITS_100_PRICE_ID || 'price_credits_100',
+            priceId: process.env.NEXT_PUBLIC_STRIPE_CREDITS_100_PRICE_ID,
             popular: false,
         },
         {
             name: '500 Credits',
             credits: 500,
             price: '$39.99',
-            priceId: process.env.NEXT_PUBLIC_STRIPE_CREDITS_500_PRICE_ID || 'price_credits_500',
+            priceId: process.env.NEXT_PUBLIC_STRIPE_CREDITS_500_PRICE_ID,
             popular: true,
             savings: 'Save 20%',
         },
@@ -122,7 +122,7 @@ export default function PricingPage() {
             name: '1500 Credits',
             credits: 1500,
             price: '$99.99',
-            priceId: process.env.NEXT_PUBLIC_STRIPE_CREDITS_1500_PRICE_ID || 'price_credits_1500',
+            priceId: process.env.NEXT_PUBLIC_STRIPE_CREDITS_1500_PRICE_ID,
             popular: false,
             savings: 'Save 33%',
         },
@@ -245,20 +245,29 @@ export default function PricingPage() {
                                     <div className="text-gray-400 text-sm">{pkg.credits} workflow runs</div>
                                 </div>
 
-                                <button
-                                    onClick={() => handleCheckout(pkg.priceId, 'credits')}
-                                    disabled={loading !== null}
-                                    className="w-full border-2 border-fuchsia-500 bg-fuchsia-500/20 text-fuchsia-500 hover:bg-fuchsia-500 hover:text-black font-bold py-3 rounded transition-all disabled:opacity-50"
-                                >
-                                    {loading === pkg.priceId ? (
-                                        <span className="flex items-center justify-center gap-2">
-                                            <Loader2 className="w-4 h-4 animate-spin" />
-                                            PROCESSING...
-                                        </span>
-                                    ) : (
-                                        'BUY NOW'
-                                    )}
-                                </button>
+                                {pkg.priceId && pkg.priceId.startsWith('price_') ? (
+                                    <button
+                                        onClick={() => handleCheckout(pkg.priceId, 'credits')}
+                                        disabled={loading !== null}
+                                        className="w-full border-2 border-fuchsia-500 bg-fuchsia-500/20 text-fuchsia-500 hover:bg-fuchsia-500 hover:text-black font-bold py-3 rounded transition-all disabled:opacity-50"
+                                    >
+                                        {loading === pkg.priceId ? (
+                                            <span className="flex items-center justify-center gap-2">
+                                                <Loader2 className="w-4 h-4 animate-spin" />
+                                                PROCESSING...
+                                            </span>
+                                        ) : (
+                                            'BUY NOW'
+                                        )}
+                                    </button>
+                                ) : (
+                                    <button
+                                        disabled
+                                        className="w-full border-2 border-gray-600 bg-gray-800 text-gray-500 font-bold py-3 rounded cursor-not-allowed"
+                                    >
+                                        PRICE NOT CONFIGURED
+                                    </button>
+                                )}
                             </div>
                         ))}
                     </div>

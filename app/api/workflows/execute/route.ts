@@ -26,16 +26,16 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Missing workflowId' }, { status: 400 });
         }
 
-        // Get the workflow
+        // Get the workflow - allow user's own workflows OR public workflows
         const { data: workflow, error: workflowError } = await supabaseAdmin
             .from('workflows')
             .select('*')
             .eq('id', workflowId)
-            .eq('user_id', userId) // Ensure user owns the workflow
+            .or(`user_id.eq.${userId},is_public.eq.true`)
             .single();
 
         if (workflowError || !workflow) {
-            return NextResponse.json({ error: 'Workflow not found' }, { status: 404 });
+            return NextResponse.json({ error: 'Workflow not found or not accessible' }, { status: 404 });
         }
 
         // Check and increment workflow usage

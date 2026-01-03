@@ -3,7 +3,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeft, Calendar, CheckCircle, XCircle, Loader2 } from 'lucide-react';
-import { ProGate } from '@/components/ProGate';
 
 type Execution = {
     id: string;
@@ -77,7 +76,6 @@ export default function WorkflowHistoryPage() {
             </div>
 
             <div className="relative z-10 max-w-6xl mx-auto px-6 py-8">
-                <ProGate feature="Execution History">
                     {/* Header */}
                     <button
                         onClick={() => router.push(`/workflows/${workflowId}/run`)}
@@ -185,7 +183,6 @@ export default function WorkflowHistoryPage() {
                             ))}
                         </div>
                     )}
-                </ProGate>
             </div>
         </div>
     );

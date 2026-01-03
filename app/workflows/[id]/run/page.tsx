@@ -3,7 +3,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Play, Loader2, CheckCircle, XCircle, ArrowLeft, Copy, Check, History } from 'lucide-react';
-import { ProGate } from '@/components/ProGate';
 
 type Workflow = {
     id: string;
@@ -175,7 +174,6 @@ export default function RunWorkflowPage() {
             </div>
 
             <div className="relative z-10 max-w-4xl mx-auto px-6 py-8">
-                <ProGate feature="Workflow Execution">
                     {/* Header */}
                     <div className="flex items-center justify-between mb-6">
                         <button
@@ -370,7 +368,6 @@ export default function RunWorkflowPage() {
                             )}
                         </div>
                     )}
-                </ProGate>
             </div>
         </div>
     );
