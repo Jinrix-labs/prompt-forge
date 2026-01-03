@@ -5,7 +5,6 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useUser, SignInButton } from '@clerk/nextjs';
 import { Sparkles, Plus, Play, Trash2, Copy, Globe, Lock, Loader2 } from 'lucide-react';
-import { ProGate } from '@/components/ProGate';
 
 type Workflow = {
     id: string;

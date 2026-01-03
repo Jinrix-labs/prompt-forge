@@ -182,9 +182,9 @@ export default function PricingPage() {
                                     >
                                         CURRENT PLAN
                                     </button>
-                                ) : plan.priceId ? (
+                                ) : plan.priceId && plan.priceId.startsWith('price_') ? (
                                     <button
-                                        onClick={() => handleCheckout(plan.priceId, 'subscription')}
+                                        onClick={() => handleCheckout(plan.priceId!, 'subscription')}
                                         disabled={loading !== null}
                                         className="w-full border-2 border-cyan-500 bg-cyan-500/20 text-cyan-500 hover:bg-cyan-500 hover:text-black font-bold py-3 rounded transition-all disabled:opacity-50"
                                     >
