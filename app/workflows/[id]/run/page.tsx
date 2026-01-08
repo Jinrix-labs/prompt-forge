@@ -9,6 +9,7 @@ type Workflow = {
     name: string;
     description: string;
     steps: any[];
+    requiredInputs?: string[];
 };
 
 type StepResult = {
@@ -45,8 +46,8 @@ export default function RunWorkflowPage() {
             
             if (data.workflow) {
                 setWorkflow(data.workflow);
-                // Initialize inputs based on first step's needs
-                const inputFields = extractInputFields(data.workflow.steps);
+                // Use requiredInputs if defined, otherwise empty
+                const inputFields: string[] = data.workflow.requiredInputs || [];
                 const initialInputs: Record<string, string> = {};
                 inputFields.forEach(field => {
                     initialInputs[field] = '';
@@ -66,34 +67,6 @@ export default function RunWorkflowPage() {
         }
     }, [workflowId, loadWorkflow]);
 
-    // Extract what inputs the user needs to provide
-    function extractInputFields(steps: any[]): string[] {
-        const fields = new Set<string>();
-        
-        steps.forEach(step => {
-            Object.entries(step.inputs || {}).forEach(([_key, source]) => {
-                if ((source as string).startsWith('user_input.')) {
-                    const field = (source as string).replace('user_input.', '');
-                    fields.add(field);
-                }
-            });
-            
-            // Also check prompt template for {{variables}}
-            if (step.config?.promptTemplate) {
-                const matches = step.config.promptTemplate.match(/{{([^}]+)}}/g);
-                if (matches) {
-                    matches.forEach((match: string) => {
-                        const field = match.replace(/{{|}}/g, '').trim();
-                        if (!field.includes('.') && !field.includes('user_input')) {
-                            fields.add(field);
-                        }
-                    });
-                }
-            }
-        });
-        
-        return Array.from(fields);
-    }
 
     async function runWorkflow() {
         setRunning(true);
@@ -214,8 +187,8 @@ export default function RunWorkflowPage() {
                             <div className="space-y-4">
                                 {inputFields.map((field) => (
                                     <div key={field}>
-                                        <label className="block text-sm font-bold text-cyan-400 mb-2 uppercase">
-                                            {field.replace(/_/g, ' ')}
+                                        <label className="block text-sm font-bold text-cyan-400 mb-2">
+                                            {field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                                         </label>
                                         <textarea
                                             value={inputs[field]}
@@ -224,7 +197,7 @@ export default function RunWorkflowPage() {
                                             }
                                             rows={3}
                                             className="w-full px-4 py-3 bg-black border-2 border-gray-700 text-white placeholder-gray-500 focus:border-cyan-500 focus:outline-none resize-none"
-                                            placeholder={`Enter ${field}...`}
+                                            placeholder={`Enter ${field.replace(/_/g, ' ')}...`}
                                         />
                                     </div>
                                 ))}

@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Zap, Workflow, Sparkles, DollarSign, Menu, X } from 'lucide-react';
+import { Zap, Workflow, Sparkles, DollarSign, Menu, X, FileText } from 'lucide-react';
 import { SignedIn, SignedOut, SignInButton, UserButton } from '@clerk/nextjs';
 import { useState } from 'react';
 
@@ -11,7 +11,7 @@ export function Navigation() {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     
     const navItems = [
-        { href: '/workflows', label: 'WORKFLOWS', icon: Workflow },
+        { href: '/templates', label: 'TEMPLATES', icon: FileText },
         { href: '/prompts', label: 'PROMPTS', icon: Zap },
         { href: '/saved', label: 'SAVED', icon: Sparkles },
         { href: '/pricing', label: 'PRICING', icon: DollarSign },

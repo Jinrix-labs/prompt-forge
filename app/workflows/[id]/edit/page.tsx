@@ -44,6 +44,7 @@ export default function EditWorkflowPage() {
     const [description, setDescription] = useState('');
     const [isPublic, setIsPublic] = useState(false);
     const [steps, setSteps] = useState<WorkflowStep[]>([]);
+    const [requiredInputs, setRequiredInputs] = useState<string[]>([]);
     const [saving, setSaving] = useState(false);
 
     const loadWorkflow = useCallback(async () => {
@@ -56,6 +57,7 @@ export default function EditWorkflowPage() {
                 setDescription(data.workflow.description || '');
                 setIsPublic(data.workflow.is_public || false);
                 setSteps(data.workflow.steps || []);
+                setRequiredInputs(data.workflow.requiredInputs || []);
             }
         } catch (error) {
             console.error('Failed to load workflow:', error);
@@ -71,17 +73,30 @@ export default function EditWorkflowPage() {
     }, [workflowId, loadWorkflow]);
 
     function addStep() {
+        const previousStep = steps.length > 0 ? steps[steps.length - 1] : null;
+        
+        // Auto-generate a prompt template that references the previous step
+        let defaultPromptTemplate = '';
+        if (previousStep) {
+            defaultPromptTemplate = `Using the output from "${previousStep.name}":\n\n{{${previousStep.id}.${previousStep.outputKey}}}\n\n[Add your instructions here]`;
+        } else {
+            defaultPromptTemplate = 'Enter your prompt here. Use {{variable}} to reference inputs.\n\nExample: Write a blog post about {{topic}}';
+        }
+
         const newStep: WorkflowStep = {
             id: `step_${Date.now()}`,
             type: 'prompt_generation',
             name: `Step ${steps.length + 1}`,
             config: {
-                promptTemplate: '',
+                promptTemplate: defaultPromptTemplate,
                 model: 'claude',
             },
-            inputs: {},
+            inputs: previousStep ? {
+                [previousStep.outputKey]: `${previousStep.id}.${previousStep.outputKey}`
+            } : {},
             outputKey: `output_${steps.length + 1}`,
         };
+        
         setSteps([...steps, newStep]);
     }
 
@@ -130,6 +145,7 @@ export default function EditWorkflowPage() {
                     name,
                     description,
                     steps,
+                    requiredInputs: requiredInputs.filter(input => input.trim() !== ''),
                     is_public: isPublic,
                 }),
             });
@@ -215,6 +231,45 @@ export default function EditWorkflowPage() {
                             />
                         </div>
 
+                        <div className="mb-4">
+                            <label className="block text-sm font-bold text-cyan-400 mb-2">
+                                REQUIRED INPUTS (What users need to provide)
+                            </label>
+                            <div className="space-y-2">
+                                {requiredInputs.map((input, idx) => (
+                                    <div key={idx} className="flex items-center gap-2">
+                                        <input
+                                            type="text"
+                                            value={input}
+                                            onChange={(e) => {
+                                                const updated = [...requiredInputs];
+                                                updated[idx] = e.target.value;
+                                                setRequiredInputs(updated);
+                                            }}
+                                            placeholder="e.g., topic"
+                                            className="flex-1 px-4 py-2 bg-black border-2 border-gray-700 text-white placeholder-gray-500 focus:border-cyan-500 focus:outline-none"
+                                        />
+                                        <button
+                                            onClick={() => setRequiredInputs(requiredInputs.filter((_, i) => i !== idx))}
+                                            className="p-2 text-red-500 hover:text-red-400 transition-all"
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                ))}
+                                <button
+                                    onClick={() => setRequiredInputs([...requiredInputs, ''])}
+                                    className="flex items-center gap-2 text-cyan-400 hover:text-cyan-300 text-sm font-bold"
+                                >
+                                    <Plus className="w-4 h-4" />
+                                    ADD INPUT
+                                </button>
+                            </div>
+                            <p className="text-xs text-gray-500 mt-2">
+                                Use these names in your prompts like: Write about {`{{topic}}`}
+                            </p>
+                        </div>
+
                         <div className="flex items-center gap-3 p-3 bg-black/50 border border-gray-700 rounded">
                             <input
                                 type="checkbox"
@@ -280,6 +335,7 @@ export default function EditWorkflowPage() {
                                         step={step}
                                         index={index}
                                         totalSteps={steps.length}
+                                        steps={steps}
                                         availableVariables={getAvailableVariables(steps, index)}
                                         onUpdate={(updates) => updateStep(index, updates)}
                                         onDelete={() => deleteStep(index)}
@@ -325,6 +381,7 @@ function StepCard({
     step,
     index,
     totalSteps,
+    steps,
     availableVariables,
     onUpdate,
     onDelete,
@@ -333,6 +390,7 @@ function StepCard({
     step: WorkflowStep;
     index: number;
     totalSteps: number;
+    steps: WorkflowStep[];
     availableVariables: string[];
     onUpdate: (updates: Partial<WorkflowStep>) => void;
     onDelete: () => void;
@@ -410,6 +468,23 @@ function StepCard({
                     {/* Type-specific config */}
                     {step.type === 'prompt_generation' && (
                         <>
+                            {index > 0 && (
+                                <div className="bg-cyan-500/10 border border-cyan-500/30 rounded-lg p-3 mb-4">
+                                    <p className="text-sm text-cyan-300">
+                                        <strong>💡 Tip:</strong> The output from previous steps is available as:
+                                    </p>
+                                    <div className="mt-2 space-y-1">
+                                        {steps.slice(0, index).map((prevStep, i) => (
+                                            <code 
+                                                key={i}
+                                                className="block text-xs bg-black px-2 py-1 rounded border border-cyan-500/50 font-mono text-cyan-400"
+                                            >
+                                                {`{{${prevStep.id}.${prevStep.outputKey}}}`} → Output from "{prevStep.name}"
+                                            </code>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
                             <div>
                                 <label className="block text-sm font-bold text-cyan-400 mb-2">
                                     AI MODEL

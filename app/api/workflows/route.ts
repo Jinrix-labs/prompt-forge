@@ -64,7 +64,7 @@ export async function POST(req: Request) {
         }
 
         const body = await req.json();
-        const { name, description, steps, is_public } = body;
+        const { name, description, steps, requiredInputs, is_public } = body;
 
         if (!name || !steps) {
             return NextResponse.json(
@@ -87,6 +87,7 @@ export async function POST(req: Request) {
                 name,
                 description: description || '',
                 steps,
+                requiredInputs: requiredInputs || [],
                 is_public: is_public || false,
             })
             .select()

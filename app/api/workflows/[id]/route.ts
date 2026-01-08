@@ -59,7 +59,7 @@ export async function PUT(
 
         const { id } = await params;
         const body = await req.json();
-        const { name, description, steps, is_public } = body;
+        const { name, description, steps, requiredInputs, is_public } = body;
 
         // Check ownership
         const { data: existing, error: checkError } = await supabaseAdmin
@@ -93,6 +93,7 @@ export async function PUT(
         if (name !== undefined) updateData.name = name;
         if (description !== undefined) updateData.description = description;
         if (steps !== undefined) updateData.steps = steps;
+        if (requiredInputs !== undefined) updateData.requiredInputs = requiredInputs;
         if (is_public !== undefined) updateData.is_public = is_public;
 
         const { data, error } = await supabaseAdmin
