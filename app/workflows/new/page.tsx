@@ -413,7 +413,7 @@ function StepCard({
                                                 key={i}
                                                 className="block text-xs bg-black px-2 py-1 rounded border border-cyan-500/50 font-mono text-cyan-400"
                                             >
-                                                {`{{${prevStep.id}.${prevStep.outputKey}}}`} → Output from "{prevStep.name}"
+                                                {`{{${prevStep.id}.${prevStep.outputKey}}}`} → Output from &quot;{prevStep.name}&quot;
                                             </code>
                                         ))}
                                     </div>

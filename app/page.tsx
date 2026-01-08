@@ -145,7 +145,7 @@ export default function HomePage() {
               <CheckCircle className="w-10 h-10 text-cyan-400 mb-4" />
               <h3 className="text-xl font-bold text-white mb-2">Professional Quality</h3>
               <p className="text-gray-400">
-                AI-powered content that's ready to use. No editing required.
+                AI-powered content that&apos;s ready to use. No editing required.
               </p>
             </div>
           </div>

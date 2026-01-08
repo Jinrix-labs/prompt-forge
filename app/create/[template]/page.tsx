@@ -177,7 +177,7 @@ export default function CreateTemplatePage() {
             Create {config.name}
           </h1>
           <p className="text-gray-400">
-            Answer a few questions and we'll create it for you
+            Answer a few questions and we&apos;ll create it for you
           </p>
         </div>
 
