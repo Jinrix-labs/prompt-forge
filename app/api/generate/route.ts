@@ -274,7 +274,7 @@ CRITICAL: You MUST return exactly 4 prompts in the array. Each prompt should be 
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'x-api-key': process.env.ANTHROPIC_API_KEY,
+                    'x-api-key': process.env.ANTHROPIC_API_KEY as string,
                     'anthropic-version': '2023-06-01',
                 },
                 body: JSON.stringify(requestBody),
@@ -294,7 +294,7 @@ CRITICAL: You MUST return exactly 4 prompts in the array. Each prompt should be 
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
+                    'Authorization': `Bearer ${process.env.GROQ_API_KEY as string}`,
                 },
                 body: JSON.stringify(requestBody),
             });
