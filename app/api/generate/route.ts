@@ -259,14 +259,17 @@ CRITICAL: You MUST return exactly 4 prompts in the array. Each prompt should be 
             const requestBody = {
                 model: 'claude-3-haiku-20240307',
                 max_tokens: outputFormat === 'structured' ? 1500 : 1000,
+                system: systemPrompt,
                 messages: [
                     {
                         role: 'user',
-                        content: `${systemPrompt}\n\nUser's basic idea: "${userInput}"`,
+                        content: `User's basic idea: "${userInput}"`,
                     },
                 ],
             };
 
+            console.log('Claude API Key present:', !!process.env.ANTHROPIC_API_KEY);
+            console.log('Making Anthropic API request...');
             response = await fetch('https://api.anthropic.com/v1/messages', {
                 method: 'POST',
                 headers: {
@@ -299,9 +302,10 @@ CRITICAL: You MUST return exactly 4 prompts in the array. Each prompt should be 
 
         if (!response.ok) {
             const errorText = await response.text();
-            console.error('API error:', errorText);
+            console.error('API Error Status:', response.status);
+            console.error('API error response:', errorText);
             const res = NextResponse.json(
-                { error: 'Failed to generate prompts', details: errorText },
+                { error: 'Failed to generate prompts', details: errorText, status: response.status },
                 { status: 502 }
             );
             res.headers.set('X-RateLimit-Limit', String(usage.limit));
@@ -369,6 +373,7 @@ CRITICAL: You MUST return exactly 4 prompts in the array. Each prompt should be 
 
     } catch (error) {
         console.error('Server error:', error);
+        console.error('Error stack:', error?.stack);
         return NextResponse.json(
             { error: 'Internal server error', details: error?.message },
             { status: 500 }
