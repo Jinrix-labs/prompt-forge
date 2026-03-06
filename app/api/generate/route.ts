@@ -371,7 +371,7 @@ CRITICAL: You MUST return exactly 4 prompts in the array. Each prompt should be 
         res.headers.set('X-RateLimit-Used', String(usage.used));
         return res;
 
-    } catch (error) {
+    } catch (error: any) {
         console.error('Server error:', error);
         console.error('Error stack:', error?.stack);
         return NextResponse.json(
