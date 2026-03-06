@@ -338,7 +338,7 @@ CRITICAL: You MUST return exactly 4 prompts in the array. Each prompt should be 
         }
 
         // Robust JSON parsing
-        function extractAndParseJSON(text) {
+        function extractAndParseJSON(text: string) {
             try {
                 return JSON.parse(text);
             } catch (_e) {
