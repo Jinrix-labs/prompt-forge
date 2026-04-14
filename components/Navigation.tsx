@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Zap, Sparkles, DollarSign, Menu, X, FileText, Shield, ScrollText, UserX } from 'lucide-react';
+import { Zap, Sparkles, DollarSign, Menu, X, FileText } from 'lucide-react';
 import { SignedIn, SignedOut, SignInButton, UserButton } from '@clerk/nextjs';
 import { useState } from 'react';
 
@@ -15,9 +15,6 @@ export function Navigation() {
         { href: '/prompts', label: 'PROMPTS', icon: Zap },
         { href: '/saved', label: 'SAVED', icon: Sparkles },
         { href: '/pricing', label: 'PRICING', icon: DollarSign },
-        { href: '/privacy', label: 'PRIVACY', icon: Shield },
-        { href: '/terms', label: 'TERMS', icon: ScrollText },
-        { href: '/delete-my-data', label: 'DELETE DATA', icon: UserX },
     ];
 
     return (

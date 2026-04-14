@@ -22,7 +22,7 @@ export function ProGate({ children, feature = 'this feature' }: ProGateProps) {
 
         const checkProStatus = async () => {
             try {
-                const res = await fetch('/api/check-pro')
+                const res = await fetch('/api/user/pro')
                 const data = await res.json()
                 setIsPro(data.isPro)
             } catch (error) {

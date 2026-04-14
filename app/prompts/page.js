@@ -525,7 +525,7 @@ export default function PromptGenerator() {
     const toggleFavorite = useCallback(async (item) => {
         // Check if user is Pro
         try {
-            const proCheck = await fetch('/api/check-pro');
+            const proCheck = await fetch('/api/user/pro');
             const { isPro } = await proCheck.json();
 
             if (!isPro) {
@@ -677,7 +677,7 @@ export default function PromptGenerator() {
     const savePrompt = useCallback(async (prompt, platform = null, contentType = null) => {
         // Check if user is Pro
         try {
-            const proCheck = await fetch('/api/check-pro');
+            const proCheck = await fetch('/api/user/pro');
             const { isPro } = await proCheck.json();
 
             if (!isPro) {
