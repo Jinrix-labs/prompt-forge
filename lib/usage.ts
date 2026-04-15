@@ -8,14 +8,17 @@ export interface UsageCheck {
     isPro: boolean
 }
 
+/** Pro or Premium subscription (Stripe webhook writes these to users.subscription_status). */
+export function isPaidSubscription(status: string | undefined): boolean {
+    return status === 'pro' || status === 'premium'
+}
+
 export async function checkAndTrackUsage(
     userId: string,
-    promptType: 'ugc' | 'regular'
+    promptType: 'ugc' | 'regular' | 'improve'
 ): Promise<UsageCheck> {
-    // Check if user is a developer (free Pro access)
-    const devUserIds = process.env.DEV_USER_IDS?.split(',').map(id => id.trim()) || []
+    const devUserIds = process.env.DEV_USER_IDS?.split(',').map((id) => id.trim()) || []
     if (devUserIds.includes(userId)) {
-        // Developers get unlimited access
         await supabase.from('usage').insert({
             user_id: userId,
             prompt_type: promptType,
@@ -36,7 +39,6 @@ export async function checkAndTrackUsage(
         .eq('id', userId)
         .single()
 
-    // If user doesn't exist, create them as free tier
     if (userError && userError.code === 'PGRST116') {
         const { data: newUser } = await supabase
             .from('users')
@@ -47,11 +49,10 @@ export async function checkAndTrackUsage(
             .select('subscription_status')
             .single()
 
-        // Continue with the new user (will be free tier)
-        const isPro = newUser?.subscription_status === 'pro' || false
+        const isPaid = isPaidSubscription(newUser?.subscription_status)
 
         if (promptType === 'regular') {
-            if (isPro) {
+            if (isPaid) {
                 await supabase.from('usage').insert({
                     user_id: userId,
                     prompt_type: 'regular',
@@ -74,7 +75,6 @@ export async function checkAndTrackUsage(
                 .gte('created_at', new Date(new Date().setHours(0, 0, 0, 0)).toISOString())
 
             const used = count || 0
-            // Free users: daily limit for regular prompts
             const limit = 10
             const allowed = used < limit
 
@@ -95,7 +95,7 @@ export async function checkAndTrackUsage(
         }
 
         if (promptType === 'ugc') {
-            if (isPro) {
+            if (isPaid) {
                 const { count } = await supabase
                     .from('usage')
                     .select('*', { count: 'exact', head: true })
@@ -150,6 +150,49 @@ export async function checkAndTrackUsage(
             }
         }
 
+        if (promptType === 'improve') {
+            if (isPaid) {
+                await supabase.from('usage').insert({
+                    user_id: userId,
+                    prompt_type: 'improve',
+                })
+
+                return {
+                    allowed: true,
+                    limit: -1,
+                    used: 0,
+                    remaining: -1,
+                    isPro: true,
+                }
+            }
+
+            const { count } = await supabase
+                .from('usage')
+                .select('*', { count: 'exact', head: true })
+                .eq('user_id', userId)
+                .eq('prompt_type', 'improve')
+                .gte('created_at', new Date(new Date().setHours(0, 0, 0, 0)).toISOString())
+
+            const used = count || 0
+            const limit = 5
+            const allowed = used < limit
+
+            if (allowed) {
+                await supabase.from('usage').insert({
+                    user_id: userId,
+                    prompt_type: 'improve',
+                })
+            }
+
+            return {
+                allowed,
+                limit,
+                used: allowed ? used + 1 : used,
+                remaining: Math.max(0, limit - (allowed ? used + 1 : used)),
+                isPro: false,
+            }
+        }
+
         return {
             allowed: false,
             limit: 0,
@@ -170,10 +213,10 @@ export async function checkAndTrackUsage(
         }
     }
 
-    const isPro = user?.subscription_status === 'pro' || false
+    const isPaid = isPaidSubscription(user?.subscription_status)
 
     if (promptType === 'regular') {
-        if (isPro) {
+        if (isPaid) {
             await supabase.from('usage').insert({
                 user_id: userId,
                 prompt_type: 'regular',
@@ -196,7 +239,6 @@ export async function checkAndTrackUsage(
             .gte('created_at', new Date(new Date().setHours(0, 0, 0, 0)).toISOString())
 
         const used = count || 0
-        // Free users: daily limit for regular prompts
         const limit = 10
         const allowed = used < limit
 
@@ -217,7 +259,7 @@ export async function checkAndTrackUsage(
     }
 
     if (promptType === 'ugc') {
-        if (isPro) {
+        if (isPaid) {
             const { count } = await supabase
                 .from('usage')
                 .select('*', { count: 'exact', head: true })
@@ -253,7 +295,6 @@ export async function checkAndTrackUsage(
             .gte('created_at', new Date(new Date().setHours(0, 0, 0, 0)).toISOString())
 
         const used = count || 0
-        // Free users: daily limit for UGC prompts
         const limit = 5
         const allowed = used < limit
 
@@ -261,6 +302,49 @@ export async function checkAndTrackUsage(
             await supabase.from('usage').insert({
                 user_id: userId,
                 prompt_type: 'ugc',
+            })
+        }
+
+        return {
+            allowed,
+            limit,
+            used: allowed ? used + 1 : used,
+            remaining: Math.max(0, limit - (allowed ? used + 1 : used)),
+            isPro: false,
+        }
+    }
+
+    if (promptType === 'improve') {
+        if (isPaid) {
+            await supabase.from('usage').insert({
+                user_id: userId,
+                prompt_type: 'improve',
+            })
+
+            return {
+                allowed: true,
+                limit: -1,
+                used: 0,
+                remaining: -1,
+                isPro: true,
+            }
+        }
+
+        const { count } = await supabase
+            .from('usage')
+            .select('*', { count: 'exact', head: true })
+            .eq('user_id', userId)
+            .eq('prompt_type', 'improve')
+            .gte('created_at', new Date(new Date().setHours(0, 0, 0, 0)).toISOString())
+
+        const used = count || 0
+        const limit = 5
+        const allowed = used < limit
+
+        if (allowed) {
+            await supabase.from('usage').insert({
+                user_id: userId,
+                prompt_type: 'improve',
             })
         }
 
@@ -281,5 +365,3 @@ export async function checkAndTrackUsage(
         isPro: false,
     }
 }
-
-

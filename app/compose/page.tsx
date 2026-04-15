@@ -1,7 +1,6 @@
 'use client';
 
-import type { ReactNode } from 'react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import {
     Send,
@@ -10,6 +9,8 @@ import {
     CheckCircle,
     AlertCircle,
     Loader2,
+    Sparkles,
+    RotateCcw,
 } from 'lucide-react';
 
 type Platform = 'twitter' | 'instagram' | 'linkedin';
@@ -19,11 +20,14 @@ type ConnectedAccount = {
     platform_username: string;
 };
 
-const PLATFORM_CONFIG: Record<Platform, { name: string; limit: number; color: string; icon: ReactNode }> = {
+const PLATFORM_CONFIG: Record<
+    Platform,
+    { name: string; limit: number; color: string; icon: ReactNode }
+> = {
     twitter: {
         name: 'X (Twitter)',
         limit: 280,
-        color: '#fff',
+        color: '#ffffff',
         icon: (
             <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
                 <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.73-8.835L1.254 2.25H8.08l4.253 5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
@@ -54,16 +58,25 @@ const PLATFORM_CONFIG: Record<Platform, { name: string; limit: number; color: st
 
 type PostMode = 'now' | 'schedule';
 type Status = 'idle' | 'loading' | 'success' | 'error';
-
-const ALLOWED: Platform[] = ['twitter', 'instagram', 'linkedin'];
+type AIStatus = 'idle' | 'loading' | 'error';
 
 function isPlatform(p: string): p is Platform {
-    return ALLOWED.includes(p as Platform);
+    return p === 'twitter' || p === 'instagram' || p === 'linkedin';
+}
+
+function normalizeConnectedAccount(row: Record<string, unknown>): ConnectedAccount | null {
+    if (typeof row.platform !== 'string' || !isPlatform(row.platform)) return null;
+    const platform_username =
+        typeof row.platform_username === 'string' ? row.platform_username : '';
+    return { platform: row.platform, platform_username };
 }
 
 export default function ComposePage() {
     const router = useRouter();
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
+
     const [content, setContent] = useState('');
+    const [previousContent, setPreviousContent] = useState('');
     const [selectedPlatforms, setSelectedPlatforms] = useState<Platform[]>([]);
     const [connectedAccounts, setConnectedAccounts] = useState<ConnectedAccount[]>([]);
     const [loadingAccounts, setLoadingAccounts] = useState(true);
@@ -72,18 +85,17 @@ export default function ComposePage() {
     const [imageUrl, setImageUrl] = useState('');
     const [status, setStatus] = useState<Status>('idle');
     const [errorMsg, setErrorMsg] = useState('');
+    const [aiStatus, setAIStatus] = useState<AIStatus>('idle');
+    const [aiErrorMsg, setAiErrorMsg] = useState('');
 
     useEffect(() => {
         fetch('/api/connected-accounts')
-            .then((r) => r.json())
-            .then((data) => {
-                const raw = (data.accounts || []) as Array<{ platform: string; platform_username: string }>;
-                setConnectedAccounts(
-                    raw.filter((a) => isPlatform(a.platform)).map((a) => ({
-                        platform: a.platform as Platform,
-                        platform_username: a.platform_username,
-                    }))
-                );
+            .then((r) => (r.ok ? r.json() : { accounts: [] }))
+            .then((data: { accounts?: unknown[] }) => {
+                const list = (data.accounts ?? [])
+                    .map((a) => normalizeConnectedAccount(a as Record<string, unknown>))
+                    .filter((a): a is ConnectedAccount => a != null);
+                setConnectedAccounts(list);
             })
             .finally(() => setLoadingAccounts(false));
     }, []);
@@ -99,46 +111,108 @@ export default function ComposePage() {
     const getUsername = (platform: Platform) =>
         connectedAccounts.find((a) => a.platform === platform)?.platform_username;
 
-    const strictestLimit = selectedPlatforms.length
-        ? Math.min(...selectedPlatforms.map((p) => PLATFORM_CONFIG[p].limit))
-        : null;
+    const strictestLimit =
+        selectedPlatforms.length > 0
+            ? Math.min(...selectedPlatforms.map((p) => PLATFORM_CONFIG[p].limit))
+            : null;
 
     const charCount = content.length;
-    const overLimit = strictestLimit !== null && charCount > strictestLimit;
+    const overLimit = strictestLimit != null && charCount > strictestLimit;
+
+    async function handleImproveWithAI() {
+        if (!content.trim() || aiStatus === 'loading') return;
+
+        setAiErrorMsg('');
+        setPreviousContent(content);
+        setAIStatus('loading');
+
+        const platformNames = selectedPlatforms.map((p) => PLATFORM_CONFIG[p].name).join(', ');
+
+        const charLimit =
+            strictestLimit != null ? `Keep it under ${strictestLimit} characters.` : '';
+
+        const prompt =
+            selectedPlatforms.length > 0
+                ? `Rewrite this social media post to be more engaging and optimized for ${platformNames}. ${charLimit} Only return the improved post text, nothing else. No quotes, no explanation.\n\nOriginal post:\n${content}`
+                : `Rewrite this social media post to be more engaging and punchy. Only return the improved post text, nothing else. No quotes, no explanation.\n\nOriginal post:\n${content}`;
+
+        const clearAiErrorLater = () => {
+            setTimeout(() => {
+                setAIStatus('idle');
+                setAiErrorMsg('');
+            }, 5000);
+        };
+
+        try {
+            const res = await fetch('/api/ai/improve-post', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ prompt }),
+            });
+
+            const data = (await res.json().catch(() => ({}))) as { error?: string; result?: string };
+
+            if (!res.ok) {
+                const msg =
+                    typeof data.error === 'string' && data.error.trim()
+                        ? data.error
+                        : 'AI request failed';
+                setAiErrorMsg(msg);
+                setAIStatus('error');
+                clearAiErrorLater();
+                return;
+            }
+
+            setContent(data.result ?? content);
+            setAiErrorMsg('');
+            setAIStatus('idle');
+            textareaRef.current?.focus();
+        } catch {
+            setAiErrorMsg('Something went wrong. Please try again.');
+            setAIStatus('error');
+            clearAiErrorLater();
+        }
+    }
+
+    function handleUndo() {
+        if (previousContent) {
+            setContent(previousContent);
+            setPreviousContent('');
+        }
+    }
 
     async function handleSubmit() {
-        if (!content.trim()) return;
-        if (selectedPlatforms.length === 0) return;
-        if (overLimit) return;
+        if (!content.trim() || selectedPlatforms.length === 0 || overLimit) return;
         if (mode === 'schedule' && !scheduledAt) return;
 
         setStatus('loading');
         setErrorMsg('');
 
         try {
-            const trimmedImage = imageUrl.trim();
             const res = await fetch('/api/posts', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    content,
+                    content: content.trim(),
                     platforms: selectedPlatforms,
-                    image_url: trimmedImage || null,
+                    image_url: imageUrl.trim() || null,
                     scheduled_at: mode === 'schedule' ? scheduledAt : null,
                     status: mode === 'now' ? 'published' : 'scheduled',
                 }),
             });
 
             if (!res.ok) {
-                const errBody = await res.json().catch(() => ({}));
-                throw new Error((errBody as { error?: string }).error || 'Failed to create post');
+                const data = await res.json().catch(() => ({}));
+                throw new Error((data as { error?: string }).error || 'Failed to create post');
             }
 
             setStatus('success');
             setTimeout(() => router.push('/dashboard'), 1500);
-        } catch (err) {
+        } catch (err: unknown) {
             setStatus('error');
-            setErrorMsg(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
+            setErrorMsg(
+                err instanceof Error ? err.message : 'Something went wrong. Please try again.'
+            );
         }
     }
 
@@ -162,7 +236,9 @@ export default function ComposePage() {
             <div className="relative z-10 max-w-2xl mx-auto px-6 py-12">
                 <div className="mb-8">
                     <h1 className="text-2xl font-bold text-white">Compose</h1>
-                    <p className="text-gray-500 text-sm mt-1">Write your post and choose where to send it</p>
+                    <p className="text-gray-500 text-sm mt-1">
+                        Write your post and choose where to send it
+                    </p>
                 </div>
 
                 {status === 'success' && (
@@ -171,7 +247,6 @@ export default function ComposePage() {
                         <p>{mode === 'now' ? 'Post published!' : 'Post scheduled!'} Redirecting…</p>
                     </div>
                 )}
-
                 {status === 'error' && (
                     <div className="flex items-center gap-3 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-red-200 text-sm mb-6">
                         <AlertCircle className="w-4 h-4 shrink-0" />
@@ -182,15 +257,60 @@ export default function ComposePage() {
                 <div className="space-y-4">
                     <div className="rounded-xl border border-white/10 bg-white/[0.03] overflow-hidden">
                         <textarea
+                            ref={textareaRef}
                             value={content}
                             onChange={(e) => setContent(e.target.value)}
                             placeholder="What do you want to say?"
                             rows={6}
                             className="w-full bg-transparent px-5 pt-5 pb-3 text-sm text-white placeholder-gray-600 resize-none focus:outline-none"
                         />
-                        <div className="flex items-center justify-between px-5 pb-4">
+
+                        <div className="flex items-center justify-between px-4 pb-4 gap-2">
                             <div className="flex items-center gap-2">
-                                {strictestLimit != null && (
+                                <button
+                                    type="button"
+                                    onClick={handleImproveWithAI}
+                                    disabled={!content.trim() || aiStatus === 'loading'}
+                                    className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border font-medium transition-all ${
+                                        aiStatus === 'error'
+                                            ? 'border-red-500/30 text-red-400 bg-red-500/10'
+                                            : content.trim() && aiStatus !== 'loading'
+                                              ? 'border-cyan-500/30 text-cyan-400 bg-cyan-500/10 hover:bg-cyan-500/20'
+                                              : 'border-white/5 text-gray-700 cursor-not-allowed'
+                                    }`}
+                                >
+                                    {aiStatus === 'loading' ? (
+                                        <>
+                                            <Loader2 className="w-3 h-3 animate-spin" />
+                                            Improving…
+                                        </>
+                                    ) : aiStatus === 'error' ? (
+                                        <>
+                                            <AlertCircle className="w-3 h-3" />
+                                            Try again
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Sparkles className="w-3 h-3" />
+                                            Improve with AI
+                                        </>
+                                    )}
+                                </button>
+
+                                {previousContent && aiStatus === 'idle' && (
+                                    <button
+                                        type="button"
+                                        onClick={handleUndo}
+                                        className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border border-white/10 text-gray-500 hover:text-white hover:border-white/20 transition-all"
+                                    >
+                                        <RotateCcw className="w-3 h-3" />
+                                        Undo
+                                    </button>
+                                )}
+                            </div>
+
+                            <div className="flex items-center gap-3">
+                                {strictestLimit != null ? (
                                     <span
                                         className={`text-xs font-mono tabular-nums ${
                                             overLimit
@@ -202,22 +322,30 @@ export default function ComposePage() {
                                     >
                                         {charCount} / {strictestLimit}
                                     </span>
-                                )}
-                                {strictestLimit == null && (
+                                ) : (
                                     <span className="text-xs text-gray-700">
-                                        Select a platform to see character limit
+                                        Select a platform to see limit
                                     </span>
                                 )}
+
+                                <button
+                                    type="button"
+                                    onClick={() => setImageUrl(imageUrl ? '' : ' ')}
+                                    className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-cyan-400 transition-colors"
+                                >
+                                    <ImageIcon className="w-3.5 h-3.5" />
+                                    {imageUrl ? 'Remove image' : 'Add image'}
+                                </button>
                             </div>
-                            <button
-                                type="button"
-                                onClick={() => setImageUrl(imageUrl ? '' : ' ')}
-                                className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-cyan-400 transition-colors"
-                            >
-                                <ImageIcon className="w-3.5 h-3.5" />
-                                {imageUrl ? 'Remove image' : 'Add image'}
-                            </button>
                         </div>
+
+                        {aiErrorMsg ? (
+                            <div className="px-4 pb-3">
+                                <p className="text-xs text-red-200/90 border border-red-500/25 rounded-lg bg-red-500/10 px-3 py-2">
+                                    {aiErrorMsg}
+                                </p>
+                            </div>
+                        ) : null}
 
                         {imageUrl !== '' && (
                             <div className="px-5 pb-4 border-t border-white/5 pt-3">
@@ -279,7 +407,6 @@ export default function ComposePage() {
                                 })}
                             </div>
                         )}
-
                         {!loadingAccounts && connectedAccounts.length === 0 && (
                             <p className="text-xs text-gray-600 mt-4">
                                 No accounts connected.{' '}
@@ -291,7 +418,9 @@ export default function ComposePage() {
                     </div>
 
                     <div className="rounded-xl border border-white/10 bg-white/[0.03] p-5">
-                        <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-4">When</p>
+                        <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-4">
+                            When
+                        </p>
                         <div className="flex gap-3 mb-4">
                             <button
                                 type="button"
@@ -318,7 +447,6 @@ export default function ComposePage() {
                                 Schedule
                             </button>
                         </div>
-
                         {mode === 'schedule' && (
                             <input
                                 type="datetime-local"

@@ -3,15 +3,9 @@
 import { Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import {
-    CheckCircle,
-    AlertCircle,
-    PenSquare,
-    CalendarDays,
-    Clock,
-    BarChart2,
-} from 'lucide-react';
+import { CheckCircle, AlertCircle, PenSquare, CalendarDays, BarChart2 } from 'lucide-react';
 import ConnectedAccounts from '@/components/ConnectedAccounts';
+import UpcomingPosts from '@/components/UpcomingPosts';
 
 function DashboardMessages() {
     const searchParams = useSearchParams();
@@ -117,29 +111,6 @@ function QuickActions() {
                     <p className="text-sm font-semibold text-white">Analytics</p>
                     <p className="text-xs text-gray-500">Coming soon</p>
                 </div>
-            </div>
-        </div>
-    );
-}
-
-function UpcomingPosts() {
-    return (
-        <div className="mb-8">
-            <div className="flex items-center justify-between mb-4">
-                <h2 className="text-base font-semibold text-white flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-gray-500" />
-                    Upcoming Posts
-                </h2>
-                <Link href="/calendar" className="text-xs text-gray-500 hover:text-cyan-400 transition-colors">
-                    View all →
-                </Link>
-            </div>
-
-            <div className="rounded-xl border border-white/10 bg-white/[0.02] px-6 py-10 text-center">
-                <p className="text-sm text-gray-500">No scheduled posts yet.</p>
-                <Link href="/compose" className="inline-block mt-3 text-xs text-cyan-400 hover:text-cyan-300 transition-colors">
-                    Create your first post →
-                </Link>
             </div>
         </div>
     );
