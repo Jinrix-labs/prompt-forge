@@ -192,7 +192,7 @@ Instead of "magical girl" costume, use: magical girl costume`
             try {
                 // First try direct parse
                 return JSON.parse(text);
-            } catch (_e) {
+            } catch {
                 // If that fails, try to fix common issues
                 let cleaned = text;
                 
