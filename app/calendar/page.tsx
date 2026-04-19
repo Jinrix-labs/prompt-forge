@@ -10,6 +10,7 @@ import {
     CheckCircle,
     XCircle,
     Loader2,
+    Trash2,
 } from 'lucide-react';
 
 type Platform = 'twitter' | 'instagram' | 'linkedin';
@@ -112,6 +113,7 @@ export default function CalendarPage() {
     const [posts, setPosts] = useState<Post[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedDay, setSelectedDay] = useState<number | null>(null);
+    const [deletingId, setDeletingId] = useState<string | null>(null);
     const today = new Date();
     const [viewDate, setViewDate] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
 
@@ -141,6 +143,18 @@ export default function CalendarPage() {
     function nextMonth() {
         setViewDate(new Date(year, month + 1, 1));
         setSelectedDay(null);
+    }
+
+    async function handleDelete(postId: string) {
+        setDeletingId(postId);
+        try {
+            const res = await fetch(`/api/posts/${postId}`, { method: 'DELETE' });
+            if (res.ok) {
+                setPosts((prev) => prev.filter((p) => p.id !== postId));
+            }
+        } finally {
+            setDeletingId(null);
+        }
     }
 
     function getPostsForDay(day: number): Post[] {
@@ -331,22 +345,44 @@ export default function CalendarPage() {
                                     const statusConf = STATUS_CONFIG[post.status];
                                     const StatusIcon = statusConf.icon;
                                     const postDate = getPostDate(post);
+                                    const isDeleting = deletingId === post.id;
+                                    const canDelete = post.status === 'scheduled' || post.status === 'draft';
 
                                     return (
-                                        <div key={post.id} className={`rounded-xl border p-3 ${statusConf.bg}`}>
+                                        <div
+                                            key={post.id}
+                                            className={`rounded-xl border p-3 ${statusConf.bg} ${isDeleting ? 'opacity-50' : ''}`}
+                                        >
                                             <div className="flex items-center justify-between mb-2">
                                                 <div className={`flex items-center gap-1 text-xs ${statusConf.color}`}>
                                                     <StatusIcon className="w-3 h-3" />
                                                     <span className="capitalize">{post.status}</span>
                                                 </div>
-                                                {postDate && (
-                                                    <span className="text-xs text-gray-600">
-                                                        {postDate.toLocaleTimeString([], {
-                                                            hour: '2-digit',
-                                                            minute: '2-digit',
-                                                        })}
-                                                    </span>
-                                                )}
+                                                <div className="flex items-center gap-2">
+                                                    {postDate && (
+                                                        <span className="text-xs text-gray-600">
+                                                            {postDate.toLocaleTimeString([], {
+                                                                hour: '2-digit',
+                                                                minute: '2-digit',
+                                                            })}
+                                                        </span>
+                                                    )}
+                                                    {canDelete && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleDelete(post.id)}
+                                                            disabled={isDeleting}
+                                                            className="text-gray-600 hover:text-red-400 transition-colors disabled:opacity-50"
+                                                            title="Cancel post"
+                                                        >
+                                                            {isDeleting ? (
+                                                                <Loader2 className="w-3 h-3 animate-spin" />
+                                                            ) : (
+                                                                <Trash2 className="w-3 h-3" />
+                                                            )}
+                                                        </button>
+                                                    )}
+                                                </div>
                                             </div>
 
                                             <p className="text-xs text-gray-300 line-clamp-3 mb-2">{post.content}</p>
@@ -385,7 +421,7 @@ export default function CalendarPage() {
                                         className="flex items-start gap-2 py-2 border-b border-white/5 last:border-0"
                                     >
                                         <Clock className="w-3 h-3 text-yellow-400 shrink-0 mt-0.5" />
-                                        <div className="min-w-0">
+                                        <div className="flex-1 min-w-0">
                                             <p className="text-xs text-gray-300 truncate">{post.content}</p>
                                             <p className="text-xs text-gray-600 mt-0.5">
                                                 {new Date(post.scheduled_at!).toLocaleDateString([], {
@@ -396,6 +432,19 @@ export default function CalendarPage() {
                                                 })}
                                             </p>
                                         </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleDelete(post.id)}
+                                            disabled={deletingId === post.id}
+                                            className="text-gray-700 hover:text-red-400 transition-colors shrink-0 disabled:opacity-50"
+                                            title="Cancel post"
+                                        >
+                                            {deletingId === post.id ? (
+                                                <Loader2 className="w-3 h-3 animate-spin" />
+                                            ) : (
+                                                <Trash2 className="w-3 h-3" />
+                                            )}
+                                        </button>
                                     </div>
                                 ))}
                                 {upcomingScheduled.length === 0 && (
