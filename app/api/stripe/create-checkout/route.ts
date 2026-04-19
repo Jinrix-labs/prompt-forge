@@ -80,8 +80,8 @@ export async function POST(req: Request) {
                 },
             ],
             mode: type === 'subscription' ? 'subscription' : 'payment',
-            success_url: `${baseUrl}/workflows?success=true`,
-            cancel_url: `${baseUrl}/workflows?canceled=true`,
+            success_url: `${baseUrl}/pricing?success=true`,
+            cancel_url: `${baseUrl}/pricing?canceled=true`,
             metadata: {
                 userId,
                 type,

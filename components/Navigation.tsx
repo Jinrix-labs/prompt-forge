@@ -2,18 +2,14 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import type { LucideIcon } from 'lucide-react';
 import {
-    Zap,
-    Sparkles,
     DollarSign,
     Menu,
     X,
-    FileText,
     LayoutDashboard,
     PenSquare,
     CalendarDays,
-    GitBranch,
+    type LucideIcon,
 } from 'lucide-react';
 import { SignedIn, SignedOut, SignInButton, UserButton } from '@clerk/nextjs';
 import { useState } from 'react';
@@ -31,11 +27,7 @@ export function Navigation() {
     ];
 
     const toolItems: NavItem[] = [
-        { href: '/templates', label: 'TEMPLATES', icon: FileText },
-        { href: '/prompts', label: 'PROMPTS', icon: Zap },
-        { href: '/saved', label: 'SAVED', icon: Sparkles },
-        { href: '/workflows', label: 'WORKFLOWS', icon: GitBranch },
-        { href: '/pricing', label: 'PRICING', icon: DollarSign },
+        { href: '/pricing', label: 'UPGRADE', icon: DollarSign },
     ];
 
     const isActive = (href: string) =>
@@ -135,7 +127,6 @@ export function Navigation() {
                                     renderNavLinkMobile(item, () => setMobileMenuOpen(false))
                                 )}
                                 <div className="border-t border-gray-800 my-1" />
-                                <p className="text-xs text-gray-600 font-bold uppercase tracking-widest">Tools</p>
                             </SignedIn>
 
                             {toolItems.map((item) =>

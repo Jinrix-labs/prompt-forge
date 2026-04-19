@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { CheckCircle, AlertCircle, PenSquare, CalendarDays, BarChart2 } from 'lucide-react';
 import ConnectedAccounts from '@/components/ConnectedAccounts';
+import TokenExpiryWarning from '@/components/TokenExpiryWarning';
 import UpcomingPosts from '@/components/UpcomingPosts';
 
 function DashboardMessages() {
@@ -136,6 +137,8 @@ export default function DashboardPage() {
                 <Suspense fallback={null}>
                     <DashboardMessages />
                 </Suspense>
+
+                <TokenExpiryWarning />
 
                 <QuickActions />
 
