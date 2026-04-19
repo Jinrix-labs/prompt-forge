@@ -253,7 +253,7 @@ export default function HomePage() {
                             </p>
                             <h2 className="font-display text-3xl md:text-5xl font-black">
                                 Everything you need,{' '}
-                                <span className="text-gray-500">nothing you don't</span>
+                                <span className="text-gray-500">nothing you don&apos;t</span>
                             </h2>
                         </div>
 
