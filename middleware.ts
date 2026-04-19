@@ -6,6 +6,7 @@ const isPublicRoute = createRouteMatcher([
     '/sign-up(.*)',
     '/saved',  // Make it public so ProGate handles auth instead of middleware redirect
     '/api/webhook(.*)', // Stripe webhooks
+    '/api/cron(.*)', // External scheduler (cron-job.org) — auth via CRON_SECRET bearer token
 ]);
 
 export default clerkMiddleware(async (auth, request) => {
