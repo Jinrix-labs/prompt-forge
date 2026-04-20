@@ -22,7 +22,7 @@ type PlatformConfig = {
 const PLATFORMS: Record<Platform, PlatformConfig> = {
     twitter: {
         name: 'X (Twitter)',
-        color: '#000000',
+        color: '#e2e8f0',
         connectUrl: '/api/auth/twitter/connect',
         description: 'Post tweets and threads',
         icon: (

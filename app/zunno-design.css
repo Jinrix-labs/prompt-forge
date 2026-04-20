@@ -1,0 +1,328 @@
+/* ── Zunno Design System ─────────────────────────────────────────────────── */
+
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+:root {
+  /* Colors */
+  --z-bg:           #080809;
+  --z-bg-2:         #0f0f12;
+  --z-bg-3:         #141418;
+  --z-border:       rgba(255,255,255,0.07);
+  --z-border-hover: rgba(255,255,255,0.13);
+  --z-surface:      rgba(255,255,255,0.035);
+  --z-surface-2:    rgba(255,255,255,0.06);
+  --z-surface-hover:rgba(255,255,255,0.075);
+
+  /* Accent */
+  --z-cyan:         #22d3ee;
+  --z-cyan-dim:     rgba(34,211,238,0.12);
+  --z-cyan-border:  rgba(34,211,238,0.25);
+
+  /* Text */
+  --z-text:         #f0f0f2;
+  --z-text-2:       #9898a6;
+  --z-text-3:       #55555f;
+
+  /* Status */
+  --z-green:        #34d399;
+  --z-green-dim:    rgba(52,211,153,0.1);
+  --z-green-border: rgba(52,211,153,0.2);
+
+  --z-yellow:       #fbbf24;
+  --z-yellow-dim:   rgba(251,191,36,0.08);
+  --z-yellow-border:rgba(251,191,36,0.2);
+
+  --z-red:          #f87171;
+  --z-red-dim:      rgba(248,113,113,0.08);
+  --z-red-border:   rgba(248,113,113,0.2);
+
+  /* Typography */
+  --z-font:  'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  --z-radius-sm:  10px;
+  --z-radius:     14px;
+  --z-radius-lg:  20px;
+  --z-radius-xl:  24px;
+}
+
+/* Base */
+body {
+  font-family: var(--z-font);
+  background: var(--z-bg);
+  color: var(--z-text);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Card system ──────────────────────────────────────────────────────────── */
+
+.z-card {
+  background: var(--z-surface);
+  border: 1px solid var(--z-border);
+  border-radius: var(--z-radius);
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.z-card-hover:hover {
+  background: var(--z-surface-2);
+  border-color: var(--z-border-hover);
+}
+
+.z-card-inset {
+  background: var(--z-bg-2);
+  border: 1px solid var(--z-border);
+  border-radius: var(--z-radius-sm);
+}
+
+/* ── Glow cards ───────────────────────────────────────────────────────────── */
+
+.z-card-glow {
+  position: relative;
+  background: var(--z-surface);
+  border: 1px solid var(--z-border);
+  border-radius: var(--z-radius-lg);
+  overflow: hidden;
+}
+
+.z-card-glow::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(34,211,238,0.3), transparent);
+}
+
+/* ── Buttons ──────────────────────────────────────────────────────────────── */
+
+.z-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: var(--z-cyan);
+  color: #000;
+  font-weight: 700;
+  font-size: 13px;
+  border-radius: var(--z-radius-sm);
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.1s ease;
+}
+
+.z-btn-primary:hover {
+  background: #38bdf8;
+  transform: translateY(-1px);
+}
+
+.z-btn-primary:active {
+  transform: translateY(0);
+}
+
+.z-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: var(--z-surface);
+  color: var(--z-text-2);
+  font-weight: 600;
+  font-size: 13px;
+  border-radius: var(--z-radius-sm);
+  border: 1px solid var(--z-border);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.z-btn-secondary:hover {
+  background: var(--z-surface-2);
+  border-color: var(--z-border-hover);
+  color: var(--z-text);
+}
+
+.z-btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: transparent;
+  color: var(--z-text-3);
+  font-weight: 500;
+  font-size: 12px;
+  border-radius: var(--z-radius-sm);
+  border: none;
+  cursor: pointer;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.z-btn-ghost:hover {
+  color: var(--z-text);
+  background: var(--z-surface);
+}
+
+/* ── Status badges ────────────────────────────────────────────────────────── */
+
+.z-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.z-badge-green {
+  background: var(--z-green-dim);
+  border: 1px solid var(--z-green-border);
+  color: var(--z-green);
+}
+
+.z-badge-yellow {
+  background: var(--z-yellow-dim);
+  border: 1px solid var(--z-yellow-border);
+  color: var(--z-yellow);
+}
+
+.z-badge-red {
+  background: var(--z-red-dim);
+  border: 1px solid var(--z-red-border);
+  color: var(--z-red);
+}
+
+.z-badge-cyan {
+  background: var(--z-cyan-dim);
+  border: 1px solid var(--z-cyan-border);
+  color: var(--z-cyan);
+}
+
+.z-badge-gray {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--z-border);
+  color: var(--z-text-3);
+}
+
+/* ── Typography ───────────────────────────────────────────────────────────── */
+
+.z-page-title {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--z-text);
+  letter-spacing: -0.02em;
+}
+
+.z-section-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--z-text-2);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.z-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--z-text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+/* ── Inputs ───────────────────────────────────────────────────────────────── */
+
+.z-input {
+  width: 100%;
+  background: var(--z-bg-2);
+  border: 1px solid var(--z-border);
+  border-radius: var(--z-radius-sm);
+  padding: 10px 14px;
+  font-size: 13px;
+  color: var(--z-text);
+  font-family: var(--z-font);
+  transition: border-color 0.15s ease;
+  outline: none;
+}
+
+.z-input::placeholder {
+  color: var(--z-text-3);
+}
+
+.z-input:focus {
+  border-color: var(--z-cyan-border);
+}
+
+/* ── Dividers ─────────────────────────────────────────────────────────────── */
+
+.z-divider {
+  height: 1px;
+  background: var(--z-border);
+  margin: 0;
+}
+
+/* ── Page background ──────────────────────────────────────────────────────── */
+
+.z-page {
+  min-height: 100vh;
+  background: var(--z-bg);
+}
+
+.z-page-blob-1 {
+  position: fixed;
+  top: -80px;
+  left: 25%;
+  width: 500px;
+  height: 500px;
+  background: rgba(34,211,238,0.04);
+  border-radius: 50%;
+  filter: blur(100px);
+  pointer-events: none;
+}
+
+.z-page-blob-2 {
+  position: fixed;
+  bottom: -80px;
+  right: 20%;
+  width: 400px;
+  height: 400px;
+  background: rgba(168,85,247,0.04);
+  border-radius: 50%;
+  filter: blur(100px);
+  pointer-events: none;
+}
+
+/* ── Scrollbar ────────────────────────────────────────────────────────────── */
+
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.1);
+  border-radius: 2px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255,255,255,0.15);
+}
+
+/* ── Animations ───────────────────────────────────────────────────────────── */
+
+@keyframes z-fade-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes z-pulse-slow {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.5; }
+}
+
+.z-animate { animation: z-fade-up 0.4s ease both; }
+.z-animate-2 { animation: z-fade-up 0.4s 0.1s ease both; }
+.z-animate-3 { animation: z-fade-up 0.4s 0.2s ease both; }

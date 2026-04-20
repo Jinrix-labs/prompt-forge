@@ -1,4 +1,5 @@
 import './globals.css'
+import './zunno-design.css'
 import { Analytics } from "@vercel/analytics/next"
 import { ClerkProvider } from "@clerk/nextjs"
 import { ConditionalNavigation } from '@/components/ConditionalNavigation'
