@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
-import { checkAndTrackUsage } from '@/lib/usage';
+import { checkUsageOrSpendCredit } from '@/lib/credits';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -23,21 +23,18 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
         }
 
-        const usage = await checkAndTrackUsage(userId, 'regular');
-        if (!usage.allowed) {
-            const res = NextResponse.json(
+        const check = await checkUsageOrSpendCredit(userId, 'regular');
+        if (!check.allowed) {
+            return NextResponse.json(
                 {
-                    error: usage.isPro
-                        ? 'Monthly limit reached'
-                        : 'Daily limit reached. Upgrade to Pro for unlimited regular prompts!',
-                    upgrade: !usage.isPro,
+                    error: check.error,
+                    code: check.code,
+                    upgrade: check.upgrade,
+                    buyCredits: check.buyCredits,
+                    creditsRemaining: check.creditsRemaining,
                 },
-                { status: 429 }
+                { status: 402 }
             );
-            res.headers.set('X-RateLimit-Limit', String(usage.limit));
-            res.headers.set('X-RateLimit-Remaining', String(usage.remaining));
-            res.headers.set('X-RateLimit-Used', String(usage.used));
-            return res;
         }
 
         const useClaude = !creativeMode;
@@ -304,14 +301,10 @@ CRITICAL: You MUST return exactly 4 prompts in the array. Each prompt should be 
             const errorText = await response.text();
             console.error('API Error Status:', response.status);
             console.error('API error response:', errorText);
-            const res = NextResponse.json(
+            return NextResponse.json(
                 { error: 'Failed to generate prompts', details: errorText, status: response.status },
                 { status: 502 }
             );
-            res.headers.set('X-RateLimit-Limit', String(usage.limit));
-            res.headers.set('X-RateLimit-Remaining', String(usage.remaining));
-            res.headers.set('X-RateLimit-Used', String(usage.used));
-            return res;
         }
 
         const data = await response.json();
@@ -330,11 +323,7 @@ CRITICAL: You MUST return exactly 4 prompts in the array. Each prompt should be 
         }
 
         if (!responseText) {
-            const res = NextResponse.json({ error: 'No content received from AI' }, { status: 502 });
-            res.headers.set('X-RateLimit-Limit', String(usage.limit));
-            res.headers.set('X-RateLimit-Remaining', String(usage.remaining));
-            res.headers.set('X-RateLimit-Used', String(usage.used));
-            return res;
+            return NextResponse.json({ error: 'No content received from AI' }, { status: 502 });
         }
 
         // Robust JSON parsing
@@ -364,12 +353,11 @@ CRITICAL: You MUST return exactly 4 prompts in the array. Each prompt should be 
         }
 
         const parsed = extractAndParseJSON(responseText);
-
-        const res = NextResponse.json(parsed);
-        res.headers.set('X-RateLimit-Limit', String(usage.limit));
-        res.headers.set('X-RateLimit-Remaining', String(usage.remaining));
-        res.headers.set('X-RateLimit-Used', String(usage.used));
-        return res;
+        const payload =
+            parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+                ? { ...parsed, usedCredits: check.usedCredits }
+                : { data: parsed, usedCredits: check.usedCredits };
+        return NextResponse.json(payload);
 
     } catch (error: any) {
         console.error('Server error:', error);

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
-import { checkAndTrackUsage } from '@/lib/usage';
+import { checkUsageOrSpendCredit } from '@/lib/credits';
 
 // Vercel runtime hints
 export const runtime = 'nodejs';
@@ -19,21 +19,18 @@ export async function POST(request) {
 
         const { brand, category, creator, length, platform, message, image, imageType } = await request.json();
 
-        const usage = await checkAndTrackUsage(userId, 'ugc');
-        if (!usage.allowed) {
-            const res = NextResponse.json(
+        const check = await checkUsageOrSpendCredit(userId, 'ugc');
+        if (!check.allowed) {
+            return NextResponse.json(
                 {
-                    error: usage.isPro
-                        ? `Monthly UGC limit reached (${usage.limit}/month). Contact support for enterprise plans.`
-                        : `Daily UGC limit reached (${usage.limit}/day). Upgrade to Pro for 200 UGC prompts per month!`,
-                    upgrade: !usage.isPro,
+                    error: check.error,
+                    code: check.code,
+                    upgrade: check.upgrade,
+                    buyCredits: check.buyCredits,
+                    creditsRemaining: check.creditsRemaining,
                 },
-                { status: 429 }
+                { status: 402 }
             );
-            res.headers.set('X-RateLimit-Limit', String(usage.limit === -1 ? '∞' : String(usage.limit)));
-            res.headers.set('X-RateLimit-Remaining', String(usage.remaining === -1 ? '∞' : String(usage.remaining)));
-            res.headers.set('X-RateLimit-Used', String(usage.used));
-            return res;
         }
 
 
@@ -231,11 +228,11 @@ Instead of "magical girl" costume, use: magical girl costume`
         }
 
         const parsed = extractAndParseJSON(responseText);
-        const res = NextResponse.json(parsed);
-        res.headers.set('X-RateLimit-Limit', String(usage.limit === -1 ? '∞' : String(usage.limit)));
-        res.headers.set('X-RateLimit-Remaining', String(usage.remaining === -1 ? '∞' : String(usage.remaining)));
-        res.headers.set('X-RateLimit-Used', String(usage.used));
-        return res;
+        const payload = {
+            ...parsed,
+            usedCredits: check.usedCredits,
+        };
+        return NextResponse.json(payload);
 
     } catch (error) {
         console.error('UGC API Error:', error);

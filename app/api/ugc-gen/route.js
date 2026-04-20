@@ -1,7 +1,14 @@
 import { NextResponse } from "next/server";
+import { auth } from "@clerk/nextjs/server";
+import { checkUsageOrSpendCredit } from "@/lib/credits";
 
 export async function POST(request) {
     try {
+        const { userId } = await auth();
+        if (!userId) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+
         const body = await request.json();
         const {
             productName,
@@ -20,6 +27,20 @@ export async function POST(request) {
             sceneIntent,
             narrationStyle
         } = body;
+
+        const check = await checkUsageOrSpendCredit(userId, 'ugc');
+        if (!check.allowed) {
+            return NextResponse.json(
+                {
+                    error: check.error,
+                    code: check.code,
+                    upgrade: check.upgrade,
+                    buyCredits: check.buyCredits,
+                    creditsRemaining: check.creditsRemaining,
+                },
+                { status: 402 }
+            );
+        }
 
         // Check if this is a suggestion request
         const isSuggestionRequest = heroMessage === 'SUGGEST_HERO' || cta === 'SUGGEST_CTA';
@@ -179,7 +200,8 @@ Instead of "magical girl" costume, use: magical girl costume`;
             return NextResponse.json({
                 success: true,
                 result: result.trim(),
-                suggestion: true
+                suggestion: true,
+                usedCredits: check.usedCredits
             });
         } else {
             // Robust JSON extraction function
@@ -234,13 +256,15 @@ Instead of "magical girl" costume, use: magical girl costume`;
                 return NextResponse.json({
                     success: true,
                     result: result,
-                    raw: true
+                    raw: true,
+                    usedCredits: check.usedCredits
                 });
             }
 
             return NextResponse.json({
                 success: true,
-                result: parsedResult
+                result: parsedResult,
+                usedCredits: check.usedCredits
             });
         }
 

@@ -102,6 +102,12 @@ export default function PromptGenerator() {
     const [showUpgradeModal, setShowUpgradeModal] = useState(false);
     const [rateLimited, setRateLimited] = useState(null);
 
+    const handleCreditLimit = useCallback((scope, errorData = {}) => {
+        setRateLimited({ scope, kind: 'credits', error: errorData });
+        const baseMsg = errorData?.error || "You've reached your plan limit and do not have enough credits.";
+        alert("💳 " + baseMsg + "\n\nBuy credits or upgrade to continue.");
+    }, []);
+
     // Load favorites from localStorage on mount
     useEffect(() => {
         try {
@@ -192,7 +198,7 @@ export default function PromptGenerator() {
 
             if (response.status === 429) {
                 const errorData = await response.json().catch(() => ({}));
-                setRateLimited({ scope: 'regular', error: errorData });
+                setRateLimited({ scope: 'regular', kind: 'limit', error: errorData });
 
                 // Friendlier explanation for free users hitting the limit
                 const baseMsg = errorData?.error ||
@@ -201,6 +207,12 @@ export default function PromptGenerator() {
                     ? "\n\nUpgrade to Pro for higher or unlimited usage."
                     : "";
                 alert("⏳ " + baseMsg + upgradeHint);
+                return;
+            }
+
+            if (response.status === 402) {
+                const errorData = await response.json().catch(() => ({}));
+                handleCreditLimit('regular', errorData);
                 return;
             }
 
@@ -244,7 +256,7 @@ export default function PromptGenerator() {
         } finally {
             setLoading(false);
         }
-    }, [userInput, contentType, platform, creativeMode, outputFormat]);
+    }, [userInput, contentType, platform, creativeMode, outputFormat, handleCreditLimit]);
 
     const handleImageUpload = useCallback((e) => {
         const file = e.target.files[0];
@@ -321,7 +333,13 @@ export default function PromptGenerator() {
 
             if (response.status === 429) {
                 const errorData = await response.json().catch(() => ({}));
-                setRateLimited({ scope: 'ugc', error: errorData });
+                setRateLimited({ scope: 'ugc', kind: 'limit', error: errorData });
+                return;
+            }
+
+            if (response.status === 402) {
+                const errorData = await response.json().catch(() => ({}));
+                handleCreditLimit('ugc', errorData);
                 return;
             }
 
@@ -337,7 +355,7 @@ export default function PromptGenerator() {
         } finally {
             setLoading(false);
         }
-    }, [ugcBrand, ugcCategory, ugcCreator, ugcLength, ugcPlatform, ugcMessage, productImage]);
+    }, [ugcBrand, ugcCategory, ugcCreator, ugcLength, ugcPlatform, ugcMessage, productImage, handleCreditLimit]);
 
     // New UGC AI generation function
     const generateUGCWithAI = useCallback(async () => {
@@ -378,6 +396,12 @@ export default function PromptGenerator() {
                 })
             });
 
+            if (response.status === 402) {
+                const errorData = await response.json().catch(() => ({}));
+                handleCreditLimit('ugc', errorData);
+                return;
+            }
+
             if (!response.ok) {
                 throw new Error('Failed to generate UGC content');
             }
@@ -403,7 +427,7 @@ export default function PromptGenerator() {
         } finally {
             setUgcAILoading(false);
         }
-    }, [ugcBrand, ugcCategory, ugcCreator, ugcLength, ugcPlatform, ugcMessage, ugcHeroMessage, ugcCTA, ugcTone, narrationStyle, promptAdherence, promptStyle, sceneIntent, user.isPro]);
+    }, [ugcBrand, ugcCategory, ugcCreator, ugcLength, ugcPlatform, ugcMessage, ugcHeroMessage, ugcCTA, ugcTone, narrationStyle, promptAdherence, promptStyle, sceneIntent, user.isPro, handleCreditLimit]);
 
     // Suggestion function for auto-filling fields (using UGC API)
     const suggestContent = useCallback(async (type) => {
@@ -438,6 +462,12 @@ export default function PromptGenerator() {
 
             console.log('Suggestion response status:', response.status);
 
+            if (response.status === 402) {
+                const errorData = await response.json().catch(() => ({}));
+                handleCreditLimit('ugc', errorData);
+                return;
+            }
+
             if (!response.ok) {
                 throw new Error(`API error: ${response.status}`);
             }
@@ -469,7 +499,7 @@ export default function PromptGenerator() {
         } finally {
             setSuggesting(false);
         }
-    }, [ugcBrand, ugcCategory, ugcCreator, ugcLength, ugcPlatform, ugcTone]);
+    }, [ugcBrand, ugcCategory, ugcCreator, ugcLength, ugcPlatform, ugcTone, handleCreditLimit]);
 
     const copyToClipboard = useCallback(async (text, index) => {
         try {
@@ -570,7 +600,7 @@ export default function PromptGenerator() {
         } catch (err) {
             console.error('Failed to copy:', err);
         }
-    }, [playgroundResult]);
+    }, [playgroundResult, handleCreditLimit]);
 
     // Shuffle function for random inspiration
     const shufflePlayground = useCallback(() => {
@@ -616,6 +646,12 @@ export default function PromptGenerator() {
                 })
             });
 
+            if (response.status === 402) {
+                const errorData = await response.json().catch(() => ({}));
+                handleCreditLimit('regular', errorData);
+                return;
+            }
+
             if (!response.ok) {
                 throw new Error('Failed to refine prompt');
             }
@@ -652,6 +688,12 @@ export default function PromptGenerator() {
                 })
             });
 
+            if (response.status === 402) {
+                const errorData = await response.json().catch(() => ({}));
+                handleCreditLimit('regular', errorData);
+                return;
+            }
+
             if (!response.ok) {
                 throw new Error('Failed to refine prompt');
             }
@@ -671,7 +713,7 @@ export default function PromptGenerator() {
         } finally {
             setRefiningIndex(null);
         }
-    }, [prompts, contentType, platform, creativeMode]);
+    }, [prompts, contentType, platform, creativeMode, handleCreditLimit]);
 
     // Save prompt function
     const savePrompt = useCallback(async (prompt, platform = null, contentType = null) => {
@@ -766,10 +808,18 @@ export default function PromptGenerator() {
                     <div className="mb-6 p-4 rounded-lg border border-yellow-500/30 bg-yellow-500/10">
                         <div className="flex items-center justify-between gap-4">
                             <div>
-                                <div className="font-bold text-yellow-400">You&apos;re out of {rateLimited.scope === 'ugc' ? 'UGC' : 'regular'} prompts</div>
-                                <div className="text-sm text-gray-300">Upgrade to Pro to keep going without interruptions.</div>
+                                <div className="font-bold text-yellow-400">
+                                    {rateLimited.kind === 'credits'
+                                        ? 'Insufficient credits'
+                                        : `You're out of ${rateLimited.scope === 'ugc' ? 'UGC' : 'regular'} prompts`}
+                                </div>
+                                <div className="text-sm text-gray-300">
+                                    {rateLimited.kind === 'credits'
+                                        ? 'You are over your plan limit and need credits to continue.'
+                                        : 'Upgrade to Pro to keep going without interruptions.'}
+                                </div>
                             </div>
-                            <UpgradeButton />
+                            <UpgradeButton type={rateLimited.kind === 'credits' ? 'credits' : 'subscription'} />
                         </div>
                     </div>
                 )}

@@ -1,7 +1,7 @@
 import { auth } from '@clerk/nextjs/server';
 import { NextRequest, NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
-import { checkAndTrackUsage } from '@/lib/usage';
+import { checkUsageOrSpendCredit } from '@/lib/credits';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -27,22 +27,17 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Prompt is required' }, { status: 400 });
     }
 
-    const usage = await checkAndTrackUsage(userId, 'improve');
-
-    if (!usage.allowed) {
+    const check = await checkUsageOrSpendCredit(userId, 'improve');
+    if (!check.allowed) {
         return NextResponse.json(
             {
-                error: usage.isPro
-                    ? 'Monthly AI limit reached. Upgrade to Premium for more.'
-                    : `Daily AI improvement limit reached (${usage.limit}/day). Upgrade to Pro for unlimited improvements.`,
-                usage: {
-                    limit: usage.limit,
-                    used: usage.used,
-                    remaining: usage.remaining,
-                    isPro: usage.isPro,
-                },
+                error: check.error,
+                code: check.code,
+                upgrade: check.upgrade,
+                buyCredits: check.buyCredits,
+                creditsRemaining: check.creditsRemaining,
             },
-            { status: 429 }
+            { status: 402 }
         );
     }
 
@@ -63,12 +58,7 @@ export async function POST(request: NextRequest) {
 
         return NextResponse.json({
             result,
-            usage: {
-                limit: usage.limit,
-                used: usage.used,
-                remaining: usage.remaining,
-                isPro: usage.isPro,
-            },
+            usedCredits: check.usedCredits,
         });
     } catch (err: unknown) {
         console.error('Anthropic error:', err);
