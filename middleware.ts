@@ -7,6 +7,9 @@ const isPublicRoute = createRouteMatcher([
     '/sign-up(.*)',
     '/api/webhook(.*)', // Stripe webhooks
     '/api/cron(.*)', // External scheduler (cron-job.org) — auth via CRON_SECRET bearer token
+    '/api/auth/instagram/callback',
+    '/api/auth/twitter/callback',
+    '/api/auth/linkedin/callback',
 ]);
 
 export default clerkMiddleware(async (auth, request) => {
