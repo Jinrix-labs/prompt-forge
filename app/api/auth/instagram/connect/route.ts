@@ -32,7 +32,7 @@ export async function GET() {
         state,
     });
 
-    const location = `https://api.instagram.com/oauth/authorize?${params.toString()}`;
+    const location = `https://www.facebook.com/dialog/oauth?${params.toString()}`;
     const res = NextResponse.redirect(location);
 
     res.cookies.set(INSTAGRAM_OAUTH_STATE_COOKIE, state, {
