@@ -72,11 +72,23 @@ export async function GET(request: NextRequest) {
     const client = new TwitterApi({ clientId, clientSecret });
 
     try {
-        const { accessToken, refreshToken, expiresIn } = await client.loginWithOAuth2({
-            code,
-            codeVerifier,
-            redirectUri,
-        });
+        let accessToken: string;
+        let refreshToken: string | undefined;
+        let expiresIn: number;
+
+        try {
+            const oauthTokens = await client.loginWithOAuth2({
+                code,
+                codeVerifier,
+                redirectUri: `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/twitter/callback`,
+            });
+            accessToken = oauthTokens.accessToken;
+            refreshToken = oauthTokens.refreshToken;
+            expiresIn = oauthTokens.expiresIn;
+        } catch (err) {
+            console.error('Twitter OAuth error:', JSON.stringify(err, null, 2));
+            return redirectWithTwitterCookiesCleared('/dashboard?error=twitter_connect_failed');
+        }
 
         const twitterClient = new TwitterApi(accessToken);
         const { data: twitterUser } = await twitterClient.v2.me();
