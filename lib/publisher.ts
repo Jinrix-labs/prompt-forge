@@ -48,7 +48,29 @@ async function publishToTwitter(
     imageUrl?: string
 ): Promise<PublishResult> {
     try {
-        const client = new TwitterApi(account.access_token);
+        const appKey = process.env.TWITTER_CONSUMER_KEY;
+        const appSecret = process.env.TWITTER_CONSUMER_SECRET;
+        if (!appKey || !appSecret) {
+            return {
+                platform: 'twitter',
+                success: false,
+                error: 'Twitter consumer credentials are not configured',
+            };
+        }
+        if (!account.refresh_token) {
+            return {
+                platform: 'twitter',
+                success: false,
+                error: 'Twitter account is missing OAuth access secret',
+            };
+        }
+
+        const client = new TwitterApi({
+            appKey,
+            appSecret,
+            accessToken: account.access_token,
+            accessSecret: account.refresh_token,
+        });
 
         let mediaId: string | undefined;
 

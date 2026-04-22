@@ -3,8 +3,8 @@ import { TwitterApi } from 'twitter-api-v2';
 import { NextResponse } from 'next/server';
 import {
     getTwitterRedirectUri,
-    TWITTER_CODE_VERIFIER_COOKIE,
-    TWITTER_OAUTH_STATE_COOKIE,
+    TWITTER_OAUTH_TOKEN_COOKIE,
+    TWITTER_OAUTH_TOKEN_SECRET_COOKIE,
 } from '@/lib/twitter-oauth';
 
 export const runtime = 'nodejs';
@@ -16,18 +16,18 @@ export async function GET() {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const clientId = process.env.TWITTER_CLIENT_ID;
-    const clientSecret = process.env.TWITTER_CLIENT_SECRET;
-    if (!clientId || !clientSecret) {
-        console.error('TWITTER_CLIENT_ID or TWITTER_CLIENT_SECRET is not set');
+    const appKey = process.env.TWITTER_CONSUMER_KEY;
+    const appSecret = process.env.TWITTER_CONSUMER_SECRET;
+    if (!appKey || !appSecret) {
+        console.error('TWITTER_CONSUMER_KEY or TWITTER_CONSUMER_SECRET is not set');
         return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
     }
 
     const redirectUri = getTwitterRedirectUri();
-    const client = new TwitterApi({ clientId, clientSecret });
+    const client = new TwitterApi({ appKey, appSecret });
 
-    const { url, codeVerifier, state } = client.generateOAuth2AuthLink(redirectUri, {
-        scope: ['tweet.read', 'tweet.write', 'users.read', 'offline.access'],
+    const { url, oauth_token, oauth_token_secret } = await client.generateAuthLink(redirectUri, {
+        linkMode: 'authorize',
     });
 
     const res = NextResponse.redirect(url);
@@ -38,7 +38,7 @@ export async function GET() {
         path: '/',
         maxAge: 600,
     };
-    res.cookies.set(TWITTER_OAUTH_STATE_COOKIE, state, cookieOpts);
-    res.cookies.set(TWITTER_CODE_VERIFIER_COOKIE, codeVerifier, cookieOpts);
+    res.cookies.set(TWITTER_OAUTH_TOKEN_COOKIE, oauth_token, cookieOpts);
+    res.cookies.set(TWITTER_OAUTH_TOKEN_SECRET_COOKIE, oauth_token_secret, cookieOpts);
     return res;
 }

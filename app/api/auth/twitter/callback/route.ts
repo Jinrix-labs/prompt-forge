@@ -1,10 +1,11 @@
 import { auth } from '@clerk/nextjs/server';
 import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
+import { TwitterApi } from 'twitter-api-v2';
 import { getAppBaseUrl } from '@/lib/instagram-oauth';
 import {
-    TWITTER_CODE_VERIFIER_COOKIE,
-    TWITTER_OAUTH_STATE_COOKIE,
+    TWITTER_OAUTH_TOKEN_COOKIE,
+    TWITTER_OAUTH_TOKEN_SECRET_COOKIE,
 } from '@/lib/twitter-oauth';
 
 export const runtime = 'nodejs';
@@ -28,8 +29,8 @@ function redirectWithTwitterCookiesCleared(pathWithQuery: string): NextResponse 
         path: '/',
         maxAge: 0,
     };
-    res.cookies.set(TWITTER_OAUTH_STATE_COOKIE, '', clear);
-    res.cookies.set(TWITTER_CODE_VERIFIER_COOKIE, '', clear);
+    res.cookies.set(TWITTER_OAUTH_TOKEN_COOKIE, '', clear);
+    res.cookies.set(TWITTER_OAUTH_TOKEN_SECRET_COOKIE, '', clear);
     return res;
 }
 
@@ -40,83 +41,65 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
-    const code = searchParams.get('code');
-    const state = searchParams.get('state');
-    const oauthError = searchParams.get('error');
+    const oauthToken = searchParams.get('oauth_token');
+    const oauthVerifier = searchParams.get('oauth_verifier');
+    const denied = searchParams.get('denied');
 
-    if (oauthError) {
+    if (denied) {
         return redirectWithTwitterCookiesCleared('/dashboard?error=twitter_denied');
     }
 
-    if (!code || !state) {
+    if (!oauthToken || !oauthVerifier) {
         return redirectWithTwitterCookiesCleared('/dashboard?error=twitter_missing_params');
     }
 
-    const savedState = request.cookies.get(TWITTER_OAUTH_STATE_COOKIE)?.value;
-    const codeVerifier = request.cookies.get(TWITTER_CODE_VERIFIER_COOKIE)?.value;
+    const storedOauthToken = request.cookies.get(TWITTER_OAUTH_TOKEN_COOKIE)?.value;
+    const oauthTokenSecret = request.cookies.get(TWITTER_OAUTH_TOKEN_SECRET_COOKIE)?.value;
 
-    if (!savedState || savedState !== state || !codeVerifier) {
+    if (!oauthTokenSecret || storedOauthToken !== oauthToken) {
         return redirectWithTwitterCookiesCleared('/dashboard?error=twitter_invalid_state');
     }
 
-    const clientId = process.env.TWITTER_CLIENT_ID;
-    const clientSecret = process.env.TWITTER_CLIENT_SECRET;
-    if (!clientId || !clientSecret) {
-        console.error('Twitter OAuth: missing TWITTER_CLIENT_ID or TWITTER_CLIENT_SECRET');
+    const appKey = process.env.TWITTER_CONSUMER_KEY;
+    const appSecret = process.env.TWITTER_CONSUMER_SECRET;
+    if (!appKey || !appSecret) {
+        console.error('Twitter OAuth: missing TWITTER_CONSUMER_KEY or TWITTER_CONSUMER_SECRET');
         return redirectWithTwitterCookiesCleared('/dashboard?error=server_config');
     }
-    console.log('Client ID check:', {
-        length: clientId.length,
-        first4: clientId.substring(0, 4),
-        last4: clientId.substring(clientId.length - 4),
-    });
 
     try {
-        let accessToken: string;
-        let refreshToken: string | undefined;
-        let expiresIn: number;
-
         try {
-            console.log('Twitter creds check:', {
-                hasClientId: !!process.env.TWITTER_CLIENT_ID,
-                hasClientSecret: !!process.env.TWITTER_CLIENT_SECRET,
-                clientIdLength: process.env.TWITTER_CLIENT_ID?.length,
+            const client = new TwitterApi({
+                appKey,
+                appSecret,
+                accessToken: oauthToken,
+                accessSecret: oauthTokenSecret,
             });
-            // OAuth client credentials must be percent-encoded before Basic auth assembly.
-            // Twitter client IDs can contain ":" which otherwise breaks header parsing.
-            const encodedClientId = encodeURIComponent(clientId);
-            const encodedClientSecret = encodeURIComponent(clientSecret);
-            const credentials = Buffer.from(`${encodedClientId}:${encodedClientSecret}`).toString('base64');
-            console.log('Basic auth header:', `Basic ${credentials}`);
+            const { accessToken, accessSecret, screenName, userId: twitterUserId } = await client.login(
+                oauthVerifier
+            );
 
-            const tokenRes = await fetch('https://api.twitter.com/2/oauth2/token', {
-                method: 'POST',
-                headers: {
-                    Authorization: `Basic ${credentials}`,
-                    'Content-Type': 'application/x-www-form-urlencoded',
+            const now = new Date().toISOString();
+            const { error: dbError } = await supabaseAdmin.from('connected_accounts').upsert(
+                {
+                    user_id: userId,
+                    platform: 'twitter',
+                    platform_user_id: String(twitterUserId),
+                    platform_username: screenName,
+                    access_token: accessToken,
+                    refresh_token: accessSecret,
+                    token_expires_at: null,
+                    updated_at: now,
                 },
-                body: new URLSearchParams({
-                    grant_type: 'authorization_code',
-                    client_id: clientId,
-                    code,
-                    redirect_uri: `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/twitter/callback`,
-                    code_verifier: codeVerifier,
-                }),
-            });
-            const tokenData = await tokenRes.json();
-            if (!tokenRes.ok) {
-                throw new Error(
-                    `Twitter token exchange failed (${tokenRes.status} ${tokenRes.statusText}): ${JSON.stringify(tokenData)}`
-                );
+                { onConflict: 'user_id,platform' }
+            );
+
+            if (dbError) {
+                console.error('connected_accounts upsert (twitter):', dbError);
+                return redirectWithTwitterCookiesCleared('/dashboard?error=twitter_db_error');
             }
 
-            accessToken = tokenData.access_token;
-            refreshToken = tokenData.refresh_token;
-            expiresIn = tokenData.expires_in;
-
-            if (!accessToken || !expiresIn) {
-                throw new Error(`Invalid Twitter token payload: ${JSON.stringify(tokenData)}`);
-            }
+            return redirectWithTwitterCookiesCleared('/dashboard?twitter=connected');
         } catch (err) {
             if (err instanceof Error) {
                 console.error('Twitter OAuth error:', err.message);
@@ -125,40 +108,6 @@ export async function GET(request: NextRequest) {
             }
             return redirectWithTwitterCookiesCleared('/dashboard?error=twitter_connect_failed');
         }
-
-        const userRes = await fetch('https://api.twitter.com/2/users/me', {
-            headers: { Authorization: `Bearer ${accessToken}` },
-        });
-        const userData = await userRes.json();
-        if (!userRes.ok) {
-            throw new Error(`Twitter profile fetch failed: ${JSON.stringify(userData)}`);
-        }
-        const { data: twitterUser } = userData;
-        if (!twitterUser?.id || !twitterUser?.username) {
-            throw new Error(`Invalid Twitter profile payload: ${JSON.stringify(userData)}`);
-        }
-
-        const now = new Date().toISOString();
-        const { error: dbError } = await supabaseAdmin.from('connected_accounts').upsert(
-            {
-                user_id: userId,
-                platform: 'twitter',
-                platform_user_id: String(twitterUser.id),
-                platform_username: twitterUser.username,
-                access_token: accessToken,
-                refresh_token: refreshToken ?? null,
-                token_expires_at: new Date(Date.now() + expiresIn * 1000).toISOString(),
-                updated_at: now,
-            },
-            { onConflict: 'user_id,platform' }
-        );
-
-        if (dbError) {
-            console.error('connected_accounts upsert (twitter):', dbError);
-            return redirectWithTwitterCookiesCleared('/dashboard?error=twitter_db_error');
-        }
-
-        return redirectWithTwitterCookiesCleared('/dashboard?twitter=connected');
     } catch (err) {
         console.error('Twitter OAuth callback error:', err);
         return redirectWithTwitterCookiesCleared('/dashboard?error=twitter_connect_failed');

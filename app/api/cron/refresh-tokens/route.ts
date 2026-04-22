@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { TwitterApi } from 'twitter-api-v2';
 
 const supabaseAdmin = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -45,37 +44,6 @@ async function refreshInstagramToken(
     }
 }
 
-async function refreshTwitterToken(
-    accountId: string,
-    refreshToken: string
-): Promise<{
-    access_token: string;
-    refresh_token: string;
-    expires_in: number;
-} | null> {
-    try {
-        const client = new TwitterApi({
-            clientId: process.env.TWITTER_CLIENT_ID!,
-            clientSecret: process.env.TWITTER_CLIENT_SECRET!,
-        });
-
-        const {
-            accessToken,
-            refreshToken: newRefreshToken,
-            expiresIn,
-        } = await client.refreshOAuth2Token(refreshToken);
-
-        return {
-            access_token: accessToken,
-            refresh_token: newRefreshToken ?? refreshToken,
-            expires_in: expiresIn,
-        };
-    } catch (err: unknown) {
-        console.error(`Twitter refresh failed for account ${accountId}:`, err);
-        return null;
-    }
-}
-
 export async function GET(request: NextRequest) {
     try {
         const authHeader = request.headers.get('authorization');
@@ -89,7 +57,7 @@ export async function GET(request: NextRequest) {
         const { data: accounts, error } = await supabaseAdmin
             .from('connected_accounts')
             .select('id, user_id, platform, access_token, refresh_token, token_expires_at')
-            .in('platform', ['instagram', 'twitter'])
+            .in('platform', ['instagram'])
             .lt('token_expires_at', thresholdDate.toISOString())
             .not('token_expires_at', 'is', null);
 
@@ -147,55 +115,6 @@ export async function GET(request: NextRequest) {
                 }
             }
 
-            if (account.platform === 'twitter') {
-                if (!account.refresh_token) {
-                    results.push({
-                        platform: 'twitter',
-                        user_id: account.user_id,
-                        success: false,
-                        error: 'No refresh token stored',
-                    });
-                    continue;
-                }
-
-                const refreshed = await refreshTwitterToken(account.id, account.refresh_token);
-
-                if (refreshed) {
-                    const { error: updateError } = await supabaseAdmin
-                        .from('connected_accounts')
-                        .update({
-                            access_token: refreshed.access_token,
-                            refresh_token: refreshed.refresh_token,
-                            token_expires_at: new Date(
-                                Date.now() + refreshed.expires_in * 1000
-                            ).toISOString(),
-                        })
-                        .eq('id', account.id);
-
-                    if (updateError) {
-                        results.push({
-                            platform: 'twitter',
-                            user_id: account.user_id,
-                            success: false,
-                            error: updateError.message,
-                        });
-                        continue;
-                    }
-
-                    results.push({
-                        platform: 'twitter',
-                        user_id: account.user_id,
-                        success: true,
-                    });
-                } else {
-                    results.push({
-                        platform: 'twitter',
-                        user_id: account.user_id,
-                        success: false,
-                        error: 'Refresh failed',
-                    });
-                }
-            }
         }
 
         const succeeded = results.filter((r) => r.success).length;
