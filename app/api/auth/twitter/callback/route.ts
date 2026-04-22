@@ -65,6 +65,11 @@ export async function GET(request: NextRequest) {
         console.error('Twitter OAuth: missing TWITTER_CLIENT_ID or TWITTER_CLIENT_SECRET');
         return redirectWithTwitterCookiesCleared('/dashboard?error=server_config');
     }
+    console.log('Client ID check:', {
+        length: clientId.length,
+        first4: clientId.substring(0, 4),
+        last4: clientId.substring(clientId.length - 4),
+    });
 
     try {
         let accessToken: string;
