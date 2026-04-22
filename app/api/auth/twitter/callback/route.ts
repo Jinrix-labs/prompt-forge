@@ -93,6 +93,7 @@ export async function GET(request: NextRequest) {
                 },
                 body: new URLSearchParams({
                     grant_type: 'authorization_code',
+                    client_id: clientId,
                     code,
                     redirect_uri: `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/twitter/callback`,
                     code_verifier: codeVerifier,
@@ -100,7 +101,9 @@ export async function GET(request: NextRequest) {
             });
             const tokenData = await tokenRes.json();
             if (!tokenRes.ok) {
-                throw new Error(JSON.stringify(tokenData));
+                throw new Error(
+                    `Twitter token exchange failed (${tokenRes.status} ${tokenRes.statusText}): ${JSON.stringify(tokenData)}`
+                );
             }
 
             accessToken = tokenData.access_token;
@@ -111,7 +114,11 @@ export async function GET(request: NextRequest) {
                 throw new Error(`Invalid Twitter token payload: ${JSON.stringify(tokenData)}`);
             }
         } catch (err) {
-            console.error('Twitter OAuth error:', JSON.stringify(err, null, 2));
+            if (err instanceof Error) {
+                console.error('Twitter OAuth error:', err.message);
+            } else {
+                console.error('Twitter OAuth error:', err);
+            }
             return redirectWithTwitterCookiesCleared('/dashboard?error=twitter_connect_failed');
         }
 
