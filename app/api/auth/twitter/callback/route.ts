@@ -82,7 +82,11 @@ export async function GET(request: NextRequest) {
                 hasClientSecret: !!process.env.TWITTER_CLIENT_SECRET,
                 clientIdLength: process.env.TWITTER_CLIENT_ID?.length,
             });
-            const credentials = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
+            // OAuth client credentials must be percent-encoded before Basic auth assembly.
+            // Twitter client IDs can contain ":" which otherwise breaks header parsing.
+            const encodedClientId = encodeURIComponent(clientId);
+            const encodedClientSecret = encodeURIComponent(clientSecret);
+            const credentials = Buffer.from(`${encodedClientId}:${encodedClientSecret}`).toString('base64');
             console.log('Basic auth header:', `Basic ${credentials}`);
 
             const tokenRes = await fetch('https://api.twitter.com/2/oauth2/token', {
