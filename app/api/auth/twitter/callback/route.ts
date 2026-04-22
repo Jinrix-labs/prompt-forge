@@ -78,6 +78,7 @@ export async function GET(request: NextRequest) {
                 clientIdLength: process.env.TWITTER_CLIENT_ID?.length,
             });
             const credentials = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
+            console.log('Basic auth header:', `Basic ${credentials}`);
 
             const tokenRes = await fetch('https://api.twitter.com/2/oauth2/token', {
                 method: 'POST',
