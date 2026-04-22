@@ -1,10 +1,8 @@
 import { auth } from '@clerk/nextjs/server';
-import { TwitterApi } from 'twitter-api-v2';
 import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
 import { getAppBaseUrl } from '@/lib/instagram-oauth';
 import {
-    getTwitterRedirectUri,
     TWITTER_CODE_VERIFIER_COOKIE,
     TWITTER_OAUTH_STATE_COOKIE,
 } from '@/lib/twitter-oauth';
@@ -68,9 +66,6 @@ export async function GET(request: NextRequest) {
         return redirectWithTwitterCookiesCleared('/dashboard?error=server_config');
     }
 
-    const redirectUri = getTwitterRedirectUri();
-    const client = new TwitterApi({ clientId, clientSecret });
-
     try {
         let accessToken: string;
         let refreshToken: string | undefined;
@@ -82,21 +77,49 @@ export async function GET(request: NextRequest) {
                 hasClientSecret: !!process.env.TWITTER_CLIENT_SECRET,
                 clientIdLength: process.env.TWITTER_CLIENT_ID?.length,
             });
-            const oauthTokens = await client.loginWithOAuth2({
-                code,
-                codeVerifier,
-                redirectUri: `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/twitter/callback`,
+            const credentials = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
+
+            const tokenRes = await fetch('https://api.twitter.com/2/oauth2/token', {
+                method: 'POST',
+                headers: {
+                    Authorization: `Basic ${credentials}`,
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams({
+                    grant_type: 'authorization_code',
+                    code,
+                    redirect_uri: `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/twitter/callback`,
+                    code_verifier: codeVerifier,
+                }),
             });
-            accessToken = oauthTokens.accessToken;
-            refreshToken = oauthTokens.refreshToken;
-            expiresIn = oauthTokens.expiresIn;
+            const tokenData = await tokenRes.json();
+            if (!tokenRes.ok) {
+                throw new Error(JSON.stringify(tokenData));
+            }
+
+            accessToken = tokenData.access_token;
+            refreshToken = tokenData.refresh_token;
+            expiresIn = tokenData.expires_in;
+
+            if (!accessToken || !expiresIn) {
+                throw new Error(`Invalid Twitter token payload: ${JSON.stringify(tokenData)}`);
+            }
         } catch (err) {
             console.error('Twitter OAuth error:', JSON.stringify(err, null, 2));
             return redirectWithTwitterCookiesCleared('/dashboard?error=twitter_connect_failed');
         }
 
-        const twitterClient = new TwitterApi(accessToken);
-        const { data: twitterUser } = await twitterClient.v2.me();
+        const userRes = await fetch('https://api.twitter.com/2/users/me', {
+            headers: { Authorization: `Bearer ${accessToken}` },
+        });
+        const userData = await userRes.json();
+        if (!userRes.ok) {
+            throw new Error(`Twitter profile fetch failed: ${JSON.stringify(userData)}`);
+        }
+        const { data: twitterUser } = userData;
+        if (!twitterUser?.id || !twitterUser?.username) {
+            throw new Error(`Invalid Twitter profile payload: ${JSON.stringify(userData)}`);
+        }
 
         const now = new Date().toISOString();
         const { error: dbError } = await supabaseAdmin.from('connected_accounts').upsert(
