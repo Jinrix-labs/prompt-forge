@@ -13,8 +13,17 @@ const isPublicRoute = createRouteMatcher([
 ]);
 
 export default clerkMiddleware(async (auth, request) => {
+    const path = request.nextUrl.pathname;
+    if (
+        path.startsWith('/api/auth/twitter/callback') ||
+        path.startsWith('/api/auth/instagram/callback') ||
+        path.startsWith('/api/auth/linkedin/callback')
+    ) {
+        return NextResponse.next();
+    }
+
     const { userId } = await auth();
-    if (request.nextUrl.pathname === '/' && userId) {
+    if (path === '/' && userId) {
         return NextResponse.redirect(new URL('/dashboard', request.url));
     }
 
