@@ -77,6 +77,11 @@ export async function GET(request: NextRequest) {
         let expiresIn: number;
 
         try {
+            console.log('Twitter creds check:', {
+                hasClientId: !!process.env.TWITTER_CLIENT_ID,
+                hasClientSecret: !!process.env.TWITTER_CLIENT_SECRET,
+                clientIdLength: process.env.TWITTER_CLIENT_ID?.length,
+            });
             const oauthTokens = await client.loginWithOAuth2({
                 code,
                 codeVerifier,
