@@ -1,101 +1,114 @@
 # ZUNNO
 
-AI-Powered Prompt Generation for Creators. Generate optimized prompts for AI image and video generation across multiple platforms.
+Zunno is an AI-assisted social media scheduler for creators and small teams.
 
-## Features
+It helps you:
+- connect social accounts (X, Instagram, LinkedIn),
+- draft and improve posts with AI,
+- schedule or publish posts,
+- track usage/credits and subscription access.
 
-- 🎨 **Multi-Platform Support**: Generate prompts for Leonardo, Midjourney, Stable Diffusion, DALL-E 3, Flux, Sora, Runway, and Pika Labs
-- 🖼️ **Image & Video**: Support for both image and video generation prompts
-- ⭐ **Favorites**: Save your favorite prompts with localStorage persistence
-- 📋 **One-Click Copy**: Copy prompts and negative prompts with a single click
-- 🎯 **Optimized Prompts**: AI-generated prompts with technical terms, emphasis, and quality indicators
-- 🎨 **Modern UI**: Beautiful, responsive interface with animated backgrounds
+## Current Product Scope
 
-## Setup
+- Web app with marketing pages and authenticated dashboard flow.
+- Compose workflow for writing and improving posts.
+- Multi-platform posting support:
+  - X (Twitter)
+  - Instagram
+  - LinkedIn
+- Calendar and upcoming post management.
+- Connected account management (connect/disconnect per platform).
+- Stripe billing and Clerk-authenticated user access.
+- Background cron endpoints for publish jobs and token refresh where applicable.
 
-1. **Install dependencies**:
+## Tech Stack
 
-   ```bash
-   npm install
-   ```
+- Next.js 15 (App Router)
+- React 19
+- TypeScript
+- Tailwind CSS
+- Clerk (authentication)
+- Supabase (app data storage)
+- Stripe (billing)
+- twitter-api-v2 (Twitter/X integration)
 
-2. **Set up environment variables**:
-   - Copy `env.example` to `.env.local`
-   - Add your Anthropic API key:
+## Local Development
 
-     ```
-     ANTHROPIC_API_KEY=your_anthropic_api_key_here
-     ```
-
-   - Get your API key from [Anthropic Console](https://console.anthropic.com/)
-
-3. **Run the development server**:
-
-   ```bash
-   npm run dev
-   ```
-
-4. **Open your browser**:
-   Navigate to [http://localhost:3000](http://localhost:3000)
-
-## Usage
-
-1. **Select Content Type**: Choose between Image or Video generation
-2. **Pick Platform**: Select your target AI platform (Leonardo, Midjourney, etc.)
-3. **Enter Your Idea**: Describe what you want to create
-4. **Generate**: Click "FORGE PROMPTS" to generate 4 optimized variations
-5. **Save Favorites**: Star prompts you like to save them for later
-6. **Copy & Use**: Copy prompts directly to your AI platform
-
-## Supported Platforms
-
-### Image Generation
-
-- **Leonardo**: AI art generation
-- **Midjourney**: Discord-based AI art
-- **Stable Diffusion**: Open-source image generation
-- **DALL-E 3**: OpenAI's image generation
-- **Flux**: High-quality image generation
-
-### Video Generation
-
-- **Sora**: OpenAI's video generation
-- **Runway**: AI video editing and generation
-- **Pika Labs**: AI video creation
-
-## Technical Details
-
-- **Framework**: Next.js 14 with App Router
-- **Styling**: Tailwind CSS
-- **Icons**: Lucide React
-- **API**: Secure Anthropic API integration
-- **Storage**: localStorage for favorites persistence
-
-## Security
-
-- API keys are stored server-side only
-- No client-side exposure of sensitive credentials
-- Secure API proxy prevents CORS issues
-
-## Development
+1. Install dependencies:
 
 ```bash
-# Install dependencies
 npm install
+```
 
-# Run development server
+2. Copy env template and fill values:
+
+```bash
+cp env.example .env.local
+```
+
+3. Start dev server:
+
+```bash
 npm run dev
+```
 
-# Build for production
+4. Open:
+
+`http://localhost:3000`
+
+## Environment Variables
+
+Use `env.example` as the source of truth.
+
+At minimum for end-to-end local testing, configure:
+- Clerk keys
+- Supabase URL + keys
+- `NEXT_PUBLIC_APP_URL`
+- AI provider key(s) used in your workflow
+- Social OAuth credentials:
+  - Instagram (Meta)
+  - LinkedIn
+  - X via OAuth 1.0a:
+    - `TWITTER_CONSUMER_KEY`
+    - `TWITTER_CONSUMER_SECRET`
+- Stripe keys if you want to test checkout/webhooks
+
+Important: OAuth callback URLs in provider dashboards must exactly match your app URL + callback routes.
+
+## Key App Routes
+
+- `/` marketing landing page
+- `/dashboard` account overview and connected accounts
+- `/compose` create/improve/schedule posts
+- `/calendar` scheduled content view
+- `/pricing` subscription plans
+- `/sign-in` and `/sign-up` auth entry points
+
+## API Overview
+
+Main API groups under `app/api` include:
+- social auth connect/callback routes
+- post creation and publishing routes
+- connected accounts routes
+- AI generation/improvement routes
+- Stripe checkout/webhook routes
+- cron routes for publish/maintenance tasks
+
+## Scripts
+
+```bash
+npm run dev
 npm run build
-
-# Start production server
-npm start
-
-# Run linting
+npm run start
 npm run lint
 ```
 
+## Notes
+
+- Keep production secrets server-side only.
+- Ensure Clerk middleware allows OAuth callback endpoints.
+- For platform integration troubleshooting, check deployment logs for callback route errors.
+
 ## License
 
-MIT License - feel free to use this project for your own applications.
+MIT
